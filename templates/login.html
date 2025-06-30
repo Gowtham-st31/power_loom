@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Powerloom DMS</title>
+    <!-- Tailwind CSS CDN link - ensured correct format -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .container {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .form-group {
+            transition: all 0.3s ease;
+        }
+        .form-group:focus-within {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn {
+            transition: all 0.2s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        #notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-500 to-purple-600">
+    <div id="notification" class="hidden"></div>
+
+    <div class="container">
+        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md">
+            <h1 class="text-3xl font-bold text-center text-indigo-800 mb-6">Login to Powerloom DMS</h1>
+            <form id="loginForm" class="space-y-6">
+                <div class="form-group">
+                    <label for="username" class="block text-gray-700 font-medium mb-1">Username</label>
+                    <input type="text" id="username" name="username" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                </div>
+                <div class="form-group">
+                    <label for="password" class="block text-gray-700 font-medium mb-1">Password</label>
+                    <input type="password" id="password" name="password" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                </div>
+                <button type="submit" class="btn w-full bg-indigo-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75">
+                    Login
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        console.log("Login page script started."); // Debugging log
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            if (!notification) {
+                console.error("Notification element not found!"); // Debugging error
+                return;
+            }
+            notification.className = type === 'success'
+                ? 'bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg'
+                : 'bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg';
+            notification.textContent = message;
+            notification.classList.remove('hidden');
+
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("Login DOMContentLoaded event fired."); // Debugging log
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    console.log("Login form submitted."); // Debugging log
+                    const formData = new FormData(e.target);
+
+                    try {
+                        const response = await fetch('/authenticate', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        const data = await response.json();
+                        console.log("Authentication response:", data); // Debugging log
+
+                        if (response.ok && data.status === 'success') {
+                            showNotification(data.message, 'success');
+                            window.location.href = '/'; // Redirect to the main application page
+                        } else {
+                            showNotification(data.message || 'Login failed', 'error');
+                        }
+                    } catch (error) {
+                        showNotification('Network error occurred during authentication.', 'error');
+                        console.error('Login error:', error); // Detailed error log
+                    }
+                });
+            } else {
+                console.error("Login form element (loginForm) not found!"); // Debugging error
+            }
+        });
+    </script>
+</body>
+</html>
