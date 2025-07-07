@@ -1950,8 +1950,8 @@
                         const changeValue = parseFloat(record.value_change);
                         const changeColorClass = changeValue > 0 ? 'text-green-600' : (changeValue < 0 ? 'text-red-600' : 'text-gray-600');
                         
-                        // Use date_formatted directly from backend, which is just the date
-                        const dateString = record.date_formatted || 'N/A'; 
+                        // Use event_date from backend, which is the user-selected date
+                        const dateString = record.event_date || 'N/A'; 
 
                         row.innerHTML = `
                             <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${dateString}</td>
