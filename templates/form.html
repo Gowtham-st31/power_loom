@@ -153,7 +153,7 @@
             animation: spin 1s linear infinite;
             display: inline-block;
             vertical-align: middle;
-            margin-left: 8px;
+            /* margin-left: 8px; */ /* Removed to center it when text is hidden */
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -260,6 +260,7 @@
                 <li id="navHomeLink"><a href="#" id="navHome" class="block py-2 px-4 rounded-md hover:bg-indigo-600 transition duration-200 text-lg">Enter Data</a></li>
                 <li><a href="#" id="navReport" class="block py-2 px-4 rounded-md hover:bg-indigo-600 transition duration-200 text-lg">Reports</a></li>
                 <li><a href="#" id="navGraphs" class="block py-2 px-4 rounded-md hover:bg-indigo-600 transition duration-200 text-lg">Graphs</a></li>
+                <!-- Removed navWarpLink from here -->
                 <li id="navAdminLink" class="hidden">
                     <a href="#" id="navAdmin" class="block py-2 px-4 rounded-md hover:bg-indigo-600 transition duration-200 text-lg">Admin Tools</a>
                 </li>
@@ -268,7 +269,7 @@
 
         <div id="contentSections">
             <!-- Section: Enter Loom Data -->
-            <section id="dataEntrySection" class="bg-white p-8 rounded-lg shadow-xl mb-8 hidden">
+            <section id="dataEntrySection" class="main-content-section bg-white p-8 rounded-lg shadow-xl mb-8 hidden">
                 <h2 class="text-2xl font-bold mb-6 text-indigo-700 border-b-2 border-indigo-200 pb-3">Enter Loom Data</h2>
                 <form id="dataEntryForm" class="space-y-5">
                     <div class="form-group">
@@ -312,13 +313,13 @@
                     </div>
 
                     <button type="submit" id="submitDataBtn" class="btn btn-primary w-full py-3 px-4 rounded-lg flex items-center justify-center text-lg">
-                        Submit Data <span id="submitDataSpinner" class="spinner hidden"></span>
+                        <span id="submitDataBtnText">Submit Data</span><span id="submitDataSpinner" class="spinner hidden"></span>
                     </button>
                 </form>
             </section>
 
             <!-- Section: Production Report -->
-            <section id="reportSection" class="bg-white p-8 rounded-lg shadow-xl mb-8 hidden">
+            <section id="reportSection" class="main-content-section bg-white p-8 rounded-lg shadow-xl mb-8 hidden">
                 <h2 class="text-2xl font-bold mb-6 text-indigo-700 border-b-2 border-indigo-200 pb-3">Production Report</h2>
                 <form id="dataQueryForm" class="space-y-5">
                     <div class="form-group" id="loomerNameQueryGroup">
@@ -354,12 +355,12 @@
                         <div class="form-group">
                             <label class="block text-gray-700 mb-1 font-semibold">To Date</label>
                             <input type="date" name="to_date" id="report_to_date" required max="2100-12-31" min="2000-01-01" 
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition duration-200 shadow-sm">
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:focus:border-indigo-400 transition duration-200 shadow-sm">
                         </div>
                     </div>
 
                     <button type="submit" id="generateReportBtn" class="btn btn-primary w-full py-3 px-4 rounded-lg flex items-center justify-center text-lg">
-                        Generate Report <span id="generateReportSpinner" class="spinner hidden"></span>
+                        <span id="generateReportBtnText">Generate Report</span><span id="generateReportSpinner" class="spinner hidden"></span>
                     </button>
                 </form>
 
@@ -412,8 +413,8 @@
 
             </section>
 
-            <!-- Section: Graphs -->
-            <section id="graphsSection" class="bg-white p-8 rounded-lg shadow-xl mb-8 hidden">
+            <!-- Section: Production Graphs -->
+            <section id="graphsSection" class="main-content-section bg-white p-8 rounded-lg shadow-xl mb-8 hidden">
                 <h2 class="text-2xl font-bold mb-6 text-indigo-700 border-b-2 border-indigo-200 pb-3">Production Graphs</h2>
                 <form id="graphQueryForm" class="space-y-5">
                     <div class="form-group">
@@ -448,7 +449,7 @@
                     </div>
 
                     <button type="submit" id="generateGraphBtn" class="btn btn-primary w-full py-3 px-4 rounded-lg flex items-center justify-center text-lg">
-                        Generate Graph <span id="generateGraphSpinner" class="spinner hidden"></span>
+                        <span id="generateGraphBtnText">Generate Graph</span><span id="generateGraphSpinner" class="spinner hidden"></span>
                     </button>
                 </form>
 
@@ -458,9 +459,8 @@
                 </div>
             </section>
 
-
             <!-- Section: Admin Tools -->
-            <section id="adminSection" class="mt-10 bg-white p-8 rounded-lg shadow-xl hidden">
+            <section id="adminSection" class="main-content-section mt-10 bg-white p-8 rounded-lg shadow-xl hidden">
                 <h2 class="text-2xl font-bold mb-6 text-indigo-700 border-b-2 border-indigo-200 pb-3">Admin Tools</h2>
                 
                 <!-- Admin Tabs -->
@@ -470,6 +470,7 @@
                     <button type="button" class="tab-button" data-tab="removeUser">Remove User</button>
                     <button type="button" class="tab-button" data-tab="removeLoomData">Remove Loom Data</button>
                     <button type="button" class="tab-button" data-tab="listUsers">List All Users</button>
+                    <button type="button" class="tab-button" data-tab="warpManagement">Warp Management</button> <!-- New Warp Tab -->
                 </div>
 
                 <!-- Tab Content: Add New User -->
@@ -492,7 +493,9 @@
                                 <option value="admin">Admin</option>
                             </select>
                         </div>
-                        <button type="submit" id="addUserBtn" class="btn bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center text-lg shadow-md">Add User <span id="addUserSpinner" class="spinner hidden"></span></button>
+                        <button type="submit" id="addUserBtn" class="btn bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center text-lg shadow-md">
+                            <span id="addUserBtnText">Add User</span><span id="addUserSpinner" class="spinner hidden"></span>
+                        </button>
                     </form>
                 </div>
 
@@ -512,7 +515,9 @@
                             <label class="block text-gray-700 mb-1 font-semibold">Confirm New Password</label>
                             <input type="password" name="confirm_password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition duration-200 shadow-sm">
                         </div>
-                        <button type="submit" id="updatePasswordBtn" class="btn bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 flex items-center justify-center text-lg shadow-md">Update Password <span id="updatePasswordSpinner" class="spinner hidden"></span></button>
+                        <button type="submit" id="updatePasswordBtn" class="btn bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 flex items-center justify-center text-lg shadow-md">
+                            <span id="updatePasswordBtnText">Update Password</span><span id="updatePasswordSpinner" class="spinner hidden"></span>
+                        </button>
                     </form>
                 </div>
 
@@ -524,7 +529,9 @@
                             <label class="block text-gray-700 mb-1 font-semibold">Username to Remove</label>
                             <input type="text" name="username" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition duration-200 shadow-sm">
                         </div>
-                        <button type="submit" id="removeUserBtn" class="btn bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 flex items-center justify-center text-lg shadow-md">Remove User <span id="removeUserSpinner" class="spinner hidden"></span></button>
+                        <button type="submit" id="removeUserBtn" class="btn bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 flex items-center justify-center text-lg shadow-md">
+                            <span id="removeUserBtnText">Remove User</span><span id="removeUserSpinner" class="spinner hidden"></span>
+                        </button>
                     </form>
                 </div>
 
@@ -572,7 +579,7 @@
                         </div>
                         <p class="text-xs text-gray-500 mt-1">Both dates must be selected for date range filtering.</p>
                         <button type="submit" id="removeDataBtn" class="btn bg-red-700 text-white py-3 px-4 rounded-lg hover:bg-red-800 flex items-center justify-center text-lg shadow-md">
-                            Remove Data <span id="removeDataSpinner" class="spinner hidden"></span>
+                            <span id="removeDataBtnText">Remove Data</span><span id="removeDataSpinner" class="spinner hidden"></span>
                         </button>
                     </form>
                 </div>
@@ -580,7 +587,9 @@
                 <!-- Tab Content: All Users List -->
                 <div id="listUsersTabContent" class="tab-content hidden">
                     <h3 class="text-xl font-semibold text-indigo-600 mb-4">All Users</h3>
-                    <button type="button" id="refreshUsersBtn" class="btn bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 mb-4 flex items-center justify-center text-lg shadow-md">Refresh User List <span id="refreshUsersSpinner" class="spinner hidden"></span></button>
+                    <button type="button" id="refreshUsersBtn" class="btn bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 mb-4 flex items-center justify-center text-lg shadow-md">
+                        <span id="refreshUsersBtnText">Refresh User List</span><span id="refreshUsersSpinner" class="spinner hidden"></span>
+                    </button>
                     <div id="usersListContainer" class="overflow-x-auto">
                         <table id="usersTable" class="min-w-full bg-white rounded-lg shadow-md hidden">
                             <thead>
@@ -596,6 +605,95 @@
                         <p id="noUsersMessage" class="text-gray-600 text-center mt-4 hidden">No users found.</p>
                     </div>
                 </div>
+
+                <!-- NEW Tab Content: Warp Management -->
+                <div id="warpManagementTabContent" class="tab-content hidden">
+                    <h3 class="text-xl font-semibold text-indigo-600 mb-4">Warp Management</h3>
+                    
+                    <!-- Current Total Warp Display -->
+                    <div class="mb-6 bg-indigo-50 p-4 rounded-md flex justify-between items-center shadow-md">
+                        <p class="text-lg font-medium text-indigo-700">Current Total Warp (Count):</p>
+                        <span id="currentTotalWarp" class="text-2xl font-bold text-indigo-900">0</span>
+                    </div>
+
+                    <!-- Update Total Warp Form -->
+                    <div class="mb-8 p-6 border border-gray-200 rounded-lg shadow-sm">
+                        <h3 class="text-lg font-semibold mb-3 text-gray-800">Update Total Warp</h3>
+                        <form id="updateWarpForm" class="flex flex-col gap-4">
+                            <div class="form-group">
+                                <label for="warpUpdateValue" class="block text-sm font-medium text-gray-700">Warp Change (Count):</label>
+                                <input type="number" id="warpUpdateValue" name="value" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="e.g., 500 or -100" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="warpUpdateDate" class="block text-sm font-medium text-gray-700">Date:</label>
+                                <input type="date" id="warpUpdateDate" name="date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="warpUpdateRemarks" class="block text-sm font-medium text-gray-700">Remarks (Optional):</label>
+                                <textarea id="warpUpdateRemarks" name="remarks" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="Reason for update"></textarea>
+                            </div>
+                            <button type="submit" id="updateWarpBtn" class="btn bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 flex items-center justify-center text-lg shadow-md">
+                                <span id="updateWarpBtnText">Update Warp</span><span id="updateWarpSpinner" class="spinner hidden"></span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Knotting Count Form -->
+                    <div class="mb-8 p-6 border border-gray-200 rounded-lg shadow-sm">
+                        <h3 class="text-lg font-semibold mb-3 text-gray-800">Generate Knotting Count</h3>
+                        <form id="applyKnottingForm" class="flex flex-col gap-4">
+                            <div class="form-group">
+                                <label for="knottingCountValue" class="block text-sm font-medium text-gray-700">Knotting Count (Count to subtract):</label>
+                                <input type="number" id="knottingCountValue" name="knotting_value" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="e.g., 200" min="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="knottingDate" class="block text-sm font-medium text-gray-700">Date:</label>
+                                <input type="date" id="knottingDate" name="date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="knottingRemarks" class="block text-sm font-medium text-gray-700">Remarks (Optional):</label>
+                                <textarea id="knottingRemarks" name="remarks" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="Loom number, reason for knotting, etc."></textarea>
+                            </div>
+                            <button type="submit" id="applyKnottingBtn" class="btn bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center justify-center text-lg shadow-md">
+                                <span id="applyKnottingBtnText">Generate Knotting</span><span id="applyKnottingSpinner" class="spinner hidden"></span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Knotting Calculation Result Display -->
+                    <div id="knottingResultDisplay" class="hidden mb-8 p-6 bg-yellow-50 border border-yellow-200 rounded-lg shadow-sm">
+                        <h3 class="text-lg font-semibold mb-3 text-gray-800">Calculated Warp After Knotting:</h3>
+                        <p class="text-2xl font-bold text-yellow-800"><span id="calculatedRemainingWarp">0.00</span></p>
+                        <p class="text-sm text-gray-600 mt-2">This value is for display only and does not alter the total warp.</p>
+                    </div>
+
+                    <!-- Warp Update History -->
+                    <div class="p-6 border border-gray-200 rounded-lg shadow-sm">
+                        <h3 class="text-lg font-semibold mb-3 text-gray-800">Warp Update History</h3>
+                        <div id="warpHistoryTableContainer" class="overflow-x-auto">
+                            <table id="warpHistoryTable" class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Change</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">New Total</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="warpHistoryTableBody" class="bg-white divide-y divide-gray-200">
+                                    <!-- History records will be loaded here by JavaScript -->
+                                    <tr><td colspan="6" class="px-4 py-2 text-center text-gray-500">Loading history...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p id="noWarpHistoryMessage" class="hidden text-center text-gray-500 mt-4">No warp update history found.</p>
+                        <button type="button" id="clearWarpHistoryBtn" class="btn bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 mt-6 w-full text-lg shadow-md">
+                            <span id="clearWarpHistoryBtnText">Clear Warp History</span><span id="clearWarpHistorySpinner" class="spinner hidden"></span>
+                        </button>
+                    </div>
+                </div>
             </section>
         </div>
     </div>
@@ -604,6 +702,7 @@
         const { jsPDF } = window.jspdf;
         let productionChartInstance = null; // To store the Chart.js instance
         let lastReportData = null; // To store the last fetched report data for PDF generation
+        let currentWarpValue = 0; // Global variable to store current total warp
 
         const notifications = {
             dataAddedSuccess: "Data added successfully!",
@@ -640,7 +739,17 @@
             passwordUpdateFailed: "Failed to update password.",
             userNotFoundForPasswordUpdate: "User not found for password update.",
             graphGeneratedSuccess: "Graph generated successfully!",
-            noGraphDataFound: "No data found for the selected graph criteria."
+            noGraphDataFound: "No data found for the selected graph criteria.",
+            warpUpdateSuccess: "Warp updated successfully!",
+            failedToUpdateWarp: "Failed to update warp.",
+            knottingAppliedSuccess: "Knotting calculation successful!", // Updated message
+            failedToApplyKnotting: "Failed to perform knotting calculation.", // Updated message
+            invalidWarpValue: "Please enter a valid number for warp change.",
+            invalidKnottingValue: "Please enter a valid non-negative number for knotting count.",
+            noRecordsFound: "No records found for the selected criteria.", 
+            warpHistoryCleared: "Warp history cleared successfully!",
+            failedToClearWarpHistory: "Failed to clear warp history.",
+            confirmClearWarpHistory: "Are you sure you want to clear ALL warp history? This action cannot be undone."
         };
 
         function showNotification(messageKey, type = 'success', params = {}) {
@@ -684,7 +793,8 @@
          */
         function showSection(sectionId) {
             console.log(`Activating section: ${sectionId}`); // Log for debugging
-            const sections = ['dataEntrySection', 'reportSection', 'graphsSection', 'adminSection'];
+            const sections = ['dataEntrySection', 'reportSection', 'graphsSection', 'adminSection']; 
+
             sections.forEach(id => {
                 const section = document.getElementById(id);
                 if (section) {
@@ -701,11 +811,14 @@
                 link.classList.remove('nav-item-active'); // Remove from all links
                 console.log(`Removed active from: ${link.id}`); // Debugging
             });
+            
+            // For the main navigation links (Enter Data, Reports, Graphs, Admin Tools)
             const activeLink = document.querySelector(`nav ul li a[id="nav${sectionId.replace('Section', '')}"]`);
             if (activeLink) {
-                activeLink.classList.add('nav-item-active'); // Add to the active link
-                console.log(`Added active to: ${activeLink.id}`); // Debugging
+                activeLink.classList.add('nav-item-active');
+                console.log(`Added active to: ${activeLink.id}`);
             }
+
 
             // If admin section is shown, activate its default tab
             if (sectionId === 'adminSection') {
@@ -715,6 +828,7 @@
             if (sectionId === 'reportSection') {
                 activateReportTab('detailedRecords'); // Default to Detailed Records tab
             }
+            // Warp section content is now part of admin tools, so its data fetching is tied to admin tab activation
         }
 
         /**
@@ -741,6 +855,10 @@
             // Special handling for List Users tab to refresh data when shown
             if (tabId === 'listUsers') {
                 fetchUsers();
+            } else if (tabId === 'warpManagement') { // New: Fetch warp data when warp management tab is activated
+                fetchCurrentTotalWarp();
+                fetchWarpHistory();
+                document.getElementById('knottingResultDisplay').classList.add('hidden'); // Hide knotting result on tab change
             }
         }
 
@@ -820,6 +938,7 @@
                 const adminSection = document.getElementById('adminSection');
                 const navAdminLink = document.getElementById('navAdminLink');
                 const navHomeLink = document.getElementById('navHomeLink'); // Get the 'Enter Data' list item
+                // Removed navWarpLink from here as it's now a tab within Admin Tools
                 const dataLoomerNameInput = document.getElementById('data_loomer_name'); // New ID
                 const reportLoomerNameInput = document.getElementById('report_loomer_name'); // New ID
                 const loomerNameReportHint = document.getElementById('loomerNameReportHint');
@@ -830,6 +949,7 @@
                 if (role === 'admin') {
                     navAdminLink.classList.remove('hidden');
                     navHomeLink.classList.remove('hidden'); // Ensure 'Enter Data' is visible for admin
+                    // navWarpLink.classList.remove('hidden'); // No longer needed here
                     dataLoomerNameInput.readOnly = false;
                     dataLoomerNameInput.value = ''; 
 
@@ -844,7 +964,7 @@
                     dataEntrySection.classList.add('hidden'); // Loomers don't add data
                     adminSection.classList.add('hidden'); 
                     navAdminLink.classList.add('hidden'); 
-                    navHomeLink.classList.add('hidden'); // Hide 'Enter Data' for loomers
+                    // navWarpLink.classList.add('hidden'); // No longer needed here
 
                     dataLoomerNameInput.value = username; 
                     dataLoomerNameInput.readOnly = true; 
@@ -878,6 +998,12 @@
                 if (removeFromDate) removeFromDate.value = today;
                 if (removeToDate) removeToDate.value = today;
 
+                // Set default date for new warp date inputs
+                const warpUpdateDateInput = document.getElementById('warpUpdateDate');
+                if (warpUpdateDateInput) warpUpdateDateInput.value = today;
+                const knottingDateInput = document.getElementById('knottingDate');
+                if (knottingDateInput) knottingDateInput.value = today;
+
 
                 // Attach navigation event listeners
                 const navHome = document.getElementById('navHome');
@@ -888,8 +1014,9 @@
                 document.getElementById('navGraphs').addEventListener('click', (e) => { e.preventDefault(); showSection('graphsSection'); });
                 const navAdmin = document.getElementById('navAdmin');
                 if (navAdmin) { 
-                    navAdmin.addEventListener('click', (e) => { e.preventDefault(); showSection('adminSection'); fetchUsers(); });
+                    navAdmin.addEventListener('click', (e) => { e.preventDefault(); showSection('adminSection'); /* fetchUsers() is called by activateAdminTab */ });
                 }
+                // Removed Warp Menu Link Listener from here
 
                 // Admin tab navigation
                 document.querySelectorAll('#adminSection .tab-button').forEach(button => {
@@ -916,25 +1043,62 @@
             }
         });
 
-        // Helper to toggle spinner visibility
-        function toggleSpinner(buttonId, show) {
+        // Helper to toggle spinner visibility and button text
+        function toggleSpinner(buttonId, show) { // Removed loadingText parameter as it's not used to change text
             const button = document.getElementById(buttonId);
-            const spinner = button ? button.querySelector('.spinner') : null;
-            if (spinner) {
-                if (show) {
-                    spinner.classList.remove('hidden');
-                    button.disabled = true;
-                    button.classList.add('opacity-75', 'cursor-not-allowed');
-                } else {
-                    spinner.classList.add('hidden');
-                    button.disabled = false;
-                    button.classList.remove('opacity-75', 'cursor-not-allowed');
+            if (!button) {
+                console.error(`Button with ID ${buttonId} not found.`);
+                return;
+            }
+            // Select the span that holds the text (assuming it's the first span child)
+            // and the spinner span (assuming it has the 'spinner' class)
+            const buttonTextSpan = button.querySelector('span:not(.spinner)'); 
+            const spinner = button.querySelector('.spinner');
+
+            if (show) {
+                if (buttonTextSpan) {
+                    buttonTextSpan.classList.add('hidden'); // Hide the text span
                 }
+                if (spinner) {
+                    spinner.classList.remove('hidden'); // Show the spinner
+                }
+                button.disabled = true;
+                button.classList.add('opacity-75', 'cursor-not-allowed');
+            } else {
+                if (buttonTextSpan) {
+                    buttonTextSpan.classList.remove('hidden'); // Show the text span
+                }
+                if (spinner) {
+                    spinner.classList.add('hidden'); // Hide the spinner
+                }
+                button.disabled = false;
+                button.classList.remove('opacity-75', 'cursor-not-allowed');
             }
         }
 
+
+        // Helper to hide all main content sections
+        function hideAllContentSections() {
+            document.querySelectorAll('.main-content-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            // Also hide specific containers that might persist
+            document.getElementById('resultContainer').classList.add('hidden');
+            document.getElementById('noRecordsMessage').classList.add('hidden');
+            document.getElementById('reportTable').innerHTML = ''; // Clear previous report data
+            document.getElementById('loomSubtotalsTable').innerHTML = '';
+            document.getElementById('dailySubtotalsTable').innerHTML = '';
+            // Clear graph if exists
+            if (productionChartInstance) {
+                productionChartInstance.destroy();
+                productionChartInstance = null;
+            }
+            document.getElementById('noGraphDataMessage').classList.add('hidden');
+        }
+
+
         document.getElementById('logoutBtn').addEventListener('click', async () => {
-            toggleSpinner('logoutBtn', true);
+            toggleSpinner('logoutBtn', true); // No text needed, spinner replaces
             try {
                 const response = await fetch('/logout', {
                     method: 'POST'
@@ -950,14 +1114,14 @@
                 showNotification('networkError', 'error');
                 console.error('Logout error:', error);
             } finally {
-                toggleSpinner('logoutBtn', false);
+                toggleSpinner('logoutBtn', false); // No text needed, spinner hides
             }
         });
 
 
         document.getElementById('dataEntryForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            toggleSpinner('submitDataBtn', true);
+            toggleSpinner('submitDataBtn', true); // No text needed, spinner replaces
             
             try {
                 const formData = new FormData(e.target);
@@ -978,6 +1142,7 @@
 
                 if (missingFields.length > 0) {
                     showNotification('missingRequiredFields', 'error', { fields: missingFields.join(', ') });
+                    toggleSpinner('submitDataBtn', false); // Ensure spinner is hidden on validation error
                     return;
                 }
 
@@ -1016,7 +1181,7 @@
                 showNotification('networkError', 'error');
                 console.error("Client-side Fetch Error:", error);
             } finally {
-                toggleSpinner('submitDataBtn', false);
+                toggleSpinner('submitDataBtn', false); // Spinner hides
             }
         });
 
@@ -1039,16 +1204,16 @@
             }
         }
 
-
         document.getElementById('dataQueryForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            toggleSpinner('generateReportBtn', true);
+            toggleSpinner('generateReportBtn', true); // No text needed, spinner replaces
             
             try {
                 const formData = new FormData(e.target);
 
                 if (!formData.get('loomer_name') || formData.get('loomer_name').trim() === '') {
                     showNotification('loomerNameRequired', 'error');
+                    toggleSpinner('generateReportBtn', false); // Ensure spinner hides
                     return;
                 }
 
@@ -1179,16 +1344,16 @@
                             `;
                             data.loom_subtotals.forEach(subtotal => {
                                 subtotalsTableHTML += `
-                                        <tr>
-                                            <td class="px-4 py-2">${subtotal.loom_number}</td>
-                                            <td class="px-4 py-2"><span class="loom-subtotal-meters">${subtotal.total_meters}</span></td>
-                                            <td class="px-4 py-2">₹${subtotal.total_salary}</td>
-                                        </tr>
+                                    <tr>
+                                        <td class="px-4 py-2">${subtotal.loom_number}</td>
+                                        <td class="px-4 py-2"><span class="loom-subtotal-meters">${subtotal.total_meters}</span></td>
+                                        <td class="px-4 py-2">₹${subtotal.total_salary}</td>
+                                    </tr>
                                 `;
                             });
                             subtotalsTableHTML += `
-                                        </tbody>
-                                    </table>
+                                    </tbody>
+                                </table>
                             `;
                             loomSubtotalsTableDiv.innerHTML = subtotalsTableHTML;
                             // loomSubtotalsContainer.classList.remove('hidden'); // This will be handled by tab activation
@@ -1200,7 +1365,7 @@
                         }
 
                         // Render Daily Subtotals if available and it's a multi-day query
-                        if (!isSingleDayQuery && data.daily_subtotals && data.daily_subtotals.length > 0) {
+                        if (data.daily_subtotals && data.daily_subtotals.length > 0) { // Removed isSingleDayQuery check here, as daily subtotals might be useful even for single day if user wants to see it
                             let dailySubtotalsTableHTML = `
                                 <table class="min-w-full bg-white rounded-lg shadow-md">
                                     <thead>
@@ -1214,16 +1379,16 @@
                             `;
                             data.daily_subtotals.forEach(subtotal => {
                                 dailySubtotalsTableHTML += `
-                                        <tr>
-                                            <td class="px-4 py-2">${subtotal.date}</td>
-                                            <td class="px-4 py-2"><span class="daily-subtotal-meters">${subtotal.total_meters}</span></td>
-                                            <td class="px-4 py-2">₹${subtotal.total_salary}</td>
-                                        </tr>
+                                    <tr>
+                                        <td class="px-4 py-2">${subtotal.date}</td>
+                                        <td class="px-4 py-2"><span class="daily-subtotal-meters">${subtotal.total_meters}</span></td>
+                                        <td class="px-4 py-2">₹${subtotal.total_salary}</td>
+                                    </tr>
                                 `;
                             });
                             dailySubtotalsTableHTML += `
-                                        </tbody>
-                                    </table>
+                                    </tbody>
+                                </table>
                             `;
                             dailySubtotalsTableDiv.innerHTML = dailySubtotalsTableHTML;
                             // dailySubtotalsContainer.classList.remove('hidden'); // This will be handled by tab activation
@@ -1247,7 +1412,7 @@
                 showNotification('networkError', 'error');
                 console.error("Client-side Fetch Error:", error);
             } finally {
-                toggleSpinner('generateReportBtn', false);
+                toggleSpinner('generateReportBtn', false); // Spinner hides
             }
         });
 
@@ -1278,12 +1443,10 @@
             const totalMeters = document.getElementById('totalMeters').textContent;
             const totalSalary = document.getElementById('totalSalary').textContent;
             
-            doc.setFontSize(14); 
-            doc.setFont('helvetica', 'normal'); 
-            doc.text(`Meters: ${totalMeters}`, 40, 80); 
             doc.setFontSize(16); 
             doc.setFont('helvetica', 'bold'); 
-            doc.text(`Salary: ₹${totalSalary}`, 40, 100); 
+            doc.text(`Total Meters: ${totalMeters}`, 40, 80); 
+            doc.text(`Total Salary: ₹${totalSalary}`, 40, 100); 
             doc.setFontSize(12); 
             doc.setFont('helvetica', 'normal'); 
 
@@ -1439,7 +1602,7 @@
 
         document.getElementById('addUserForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            toggleSpinner('addUserBtn', true);
+            toggleSpinner('addUserBtn', true); // No text needed, spinner replaces
             const formData = new FormData(e.target);
 
             try {
@@ -1466,21 +1629,21 @@
                 showNotification('networkError', 'error');
                 console.error("Client-side Fetch Error:", error);
             } finally {
-                toggleSpinner('addUserBtn', false);
+                toggleSpinner('addUserBtn', false); // Spinner hides
             }
         });
 
 
         document.getElementById('updatePasswordForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            toggleSpinner('updatePasswordBtn', true);
+            toggleSpinner('updatePasswordBtn', true); // No text needed, spinner replaces
             const formData = new FormData(e.target);
             const newPassword = formData.get('new_password');
             const confirmPassword = formData.get('confirm_password');
 
             if (newPassword !== confirmPassword) {
                 showNotification('passwordMismatch', 'error');
-                toggleSpinner('updatePasswordBtn', false);
+                toggleSpinner('updatePasswordBtn', false); // Ensure spinner hides
                 return;
             }
 
@@ -1507,26 +1670,26 @@
                 showNotification('networkError', 'error');
                 console.error("Client-side Fetch Error:", error);
             } finally {
-                toggleSpinner('updatePasswordBtn', false);
+                toggleSpinner('updatePasswordBtn', false); // Spinner hides
             }
         });
 
         document.getElementById('removeUserForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            toggleSpinner('removeUserBtn', true);
+            toggleSpinner('removeUserBtn', true); // No text needed, spinner replaces
             const formData = new FormData(e.target);
             const usernameToRemove = formData.get('username');
             const currentLoggedInUsername = document.getElementById('currentUsername').textContent;
 
             if (usernameToRemove === currentLoggedInUsername) {
                 showNotification('cannotRemoveSelf', 'error');
-                toggleSpinner('removeUserBtn', false);
+                toggleSpinner('removeUserBtn', false); // Ensure spinner hides
                 return;
             }
 
             // Use custom confirmation for removing user
             if (!await showCustomConfirm(`Are you sure you want to remove user "${usernameToRemove}"? This action cannot be undone.`)) {
-                toggleSpinner('removeUserBtn', false);
+                toggleSpinner('removeUserBtn', false); // Ensure spinner hides
                 return;
             }
 
@@ -1554,13 +1717,13 @@
                 showNotification('networkError', 'error');
                 console.error("Client-side Fetch Error:", error);
             } finally {
-                toggleSpinner('removeUserBtn', false);
+                toggleSpinner('removeUserBtn', false); // Spinner hides
             }
         });
 
         document.getElementById('removeLoomDataForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            toggleSpinner('removeDataBtn', true);
+            toggleSpinner('removeDataBtn', true); // No text needed, spinner replaces
             const formData = new FormData(e.target);
 
             const loomerName = formData.get('loomer_name').trim();
@@ -1570,45 +1733,36 @@
             // Validation: At least loomer name or a date range must be provided
             if (!loomerName && (!fromDate || !toDate)) {
                 showNotification('loomerNameOrDateRangeRequired', 'error');
-                toggleSpinner('removeDataBtn', false);
+                toggleSpinner('removeDataBtn', false); // Ensure spinner hides
                 return;
             }
 
-            // Validate date range if provided
+            // Date range validation
             if (fromDate && toDate) {
-                const d1 = new Date(fromDate);
-                const d2 = new Date(toDate);
-                if (isNaN(d1.getTime()) || isNaN(d2.getTime())) {
-                    showNotification('invalidDateFormat', 'error');
-                    toggleSpinner('removeDataBtn', false);
-                    return;
-                }
-                if (d1 > d2) {
+                if (new Date(fromDate) > new Date(toDate)) {
                     showNotification('fromDateAfterToDate', 'error');
-                    toggleSpinner('removeDataBtn', false);
+                    toggleSpinner('removeDataBtn', false); // Ensure spinner hides
                     return;
                 }
-            } else if ((fromDate && !toDate) || (!fromDate && toDate)) {
+            } else if (fromDate || toDate) { // If only one date is provided
                 showNotification('bothDatesRequired', 'error');
-                toggleSpinner('removeDataBtn', false);
+                toggleSpinner('removeDataBtn', false); // Ensure spinner hides
                 return;
             }
 
-            // Custom confirmation dialog
-            const confirmation = await showCustomConfirm(notifications.removeDataConfirm);
-            if (!confirmation) {
-                toggleSpinner('removeDataBtn', false);
+            // Confirmation before removal
+            if (!await showCustomConfirm(notifications.removeDataConfirm)) {
+                toggleSpinner('removeDataBtn', false); // Ensure spinner hides
                 return;
             }
 
             try {
-                // Corrected endpoint URL
-                const response = await fetch('/admin/remove_data', { 
+                const response = await fetch('/admin/remove_data', {
                     method: 'POST',
                     body: formData
                 });
 
-                if (response.status === 401 || response.status === 403) { 
+                if (response.status === 401 || response.status === 403) {
                     showNotification('sessionExpired', 'error');
                     setTimeout(() => window.location.href = '/login', 1500);
                     return;
@@ -1616,12 +1770,10 @@
 
                 const data = await response.json();
                 if (response.ok && data.status === 'success') {
-                    if (data.deleted_count > 0) {
-                        showNotification('removeDataSuccess', 'success', { count: data.deleted_count });
-                        e.target.reset(); // Clear form after successful removal
-                    } else {
-                        showNotification('noMatchingRecords', 'info');
-                    }
+                    showNotification('removeDataSuccess', 'success', { count: data.deleted_count });
+                    e.target.reset(); // Clear the form
+                } else if (data.status === 'info') {
+                    showNotification('noMatchingRecords', 'info');
                 } else {
                     showNotification(data.message || 'failedToRemoveData', 'error');
                 }
@@ -1629,87 +1781,22 @@
                 showNotification('networkError', 'error');
                 console.error("Client-side Fetch Error:", error);
             } finally {
-                toggleSpinner('removeDataBtn', false);
+                toggleSpinner('removeDataBtn', false); // Spinner hides
             }
         });
 
-
-        async function fetchUsers() {
-            toggleSpinner('refreshUsersBtn', true);
-            const usersTableBody = document.querySelector('#usersTable tbody');
-            const usersTable = document.getElementById('usersTable');
-            const noUsersMessage = document.getElementById('noUsersMessage');
-            usersTableBody.innerHTML = '';
-            usersTable.classList.add('hidden');
-            noUsersMessage.classList.add('hidden');
-
-            try {
-                const response = await fetch('/admin/get_users', {
-                    method: 'GET'
-                });
-
-                if (response.status === 401 || response.status === 403) { 
-                    showNotification('notAuthorizedAdmin', 'error');
-                    setTimeout(() => window.location.href = '/login', 1500);
-                    return;
-                }
-
-                const data = await response.json();
-                if (response.ok && data.status === 'success' && data.users && data.users.length > 0) {
-                    data.users.forEach(user => {
-                        const row = usersTableBody.insertRow();
-                        row.innerHTML = `
-                            <td class="px-4 py-2">${user.username}</td>
-                            <td class="px-4 py-2">${user.role}</td>
-                            <td class="px-4 py-2">${user.user_id}</td>
-                        `;
-                    });
-                    usersTable.classList.remove('hidden');
-                } else {
-                    noUsersMessage.classList.remove('hidden');
-                    showNotification('failedToFetchUsers', 'info');
-                }
-            } catch (error) {
-                showNotification('networkError', 'error');
-                console.error("Client-side Fetch Error:", error);
-            } finally {
-                toggleSpinner('refreshUsersBtn', false);
-            }
-        }
-
-        document.getElementById('refreshUsersBtn').addEventListener('click', fetchUsers);
-
-
         document.getElementById('graphQueryForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            toggleSpinner('generateGraphBtn', true);
+            toggleSpinner('generateGraphBtn', true); // No text needed, spinner replaces
 
             try {
                 const formData = new FormData(e.target);
-                const loomerName = formData.get('loomer_name').trim();
-                const period = formData.get('period');
-                const fromDate = formData.get('from_date');
-                const toDate = formData.get('to_date');
-
-                if (!loomerName) {
-                    showNotification('loomerNameRequired', 'error');
-                    return;
-                }
-                if (!fromDate || !toDate) {
-                    showNotification('bothDatesRequired', 'error');
-                    return;
-                }
-                if (new Date(fromDate) > new Date(toDate)) {
-                    showNotification('fromDateAfterToDate', 'error');
-                    return;
-                }
-
                 const response = await fetch('/get_graph_data', {
                     method: 'POST',
                     body: formData
                 });
 
-                if (response.status === 401 || response.status === 403) { 
+                if (response.status === 401 || response.status === 403) {
                     showNotification('sessionExpired', 'error');
                     setTimeout(() => window.location.href = '/login', 1500);
                     return;
@@ -1717,47 +1804,46 @@
 
                 const contentType = response.headers.get('content-type');
                 if (!contentType || !contentType.includes('application/json')) {
-                    const text = await response.text(); 
+                    const text = await response.text();
                     console.error('Server response was not JSON:', text);
                     showNotification('networkError', 'error');
                     return;
                 }
 
                 const data = await response.json();
-                console.log("Graph data received:", data); // Log the received data for debugging
 
-                const noGraphDataMessage = document.getElementById('noGraphDataMessage');
                 const productionChartCanvas = document.getElementById('productionChart');
+                const noGraphDataMessage = document.getElementById('noGraphDataMessage');
 
                 if (productionChartInstance) {
-                    productionChartInstance.destroy(); // Destroy existing chart
+                    productionChartInstance.destroy(); // Destroy previous chart instance
                 }
-                noGraphDataMessage.classList.add('hidden');
 
-                if (data.status === 'success' && data.graph_data && data.graph_data.labels.length > 0) { // Check length for actual data points
-                    const labels = data.graph_data.labels;
-                    const meters = data.graph_data.meters;
-                    const salary = data.graph_data.salary;
+                if (data.graph_data && data.graph_data.labels.length > 0) {
+                    noGraphDataMessage.classList.add('hidden');
+                    productionChartCanvas.classList.remove('hidden'); // Ensure canvas is visible
 
-                    const ctx = productionChartCanvas.getContext('2d');
-                    productionChartInstance = new Chart(ctx, {
-                        type: 'bar', // Can be 'line', 'bar', etc.
+                    productionChartInstance = new Chart(productionChartCanvas, {
+                        type: 'line', // Line chart is good for time series
                         data: {
-                            labels: labels,
-                            datasets: [{
-                                label: 'Meters Produced',
-                                data: meters,
-                                backgroundColor: 'rgba(99, 102, 241, 0.6)', // Indigo-500
-                                borderColor: 'rgba(79, 70, 229, 1)', // Indigo-600
-                                borderWidth: 1
-                            },
-                            {
-                                label: 'Calculated Salary (₹)',
-                                data: salary,
-                                backgroundColor: 'rgba(139, 92, 246, 0.6)', // Violet-500
-                                borderColor: 'rgba(124, 58, 237, 1)', // Violet-600
-                                borderWidth: 1
-                            }]
+                            labels: data.graph_data.labels,
+                            datasets: [
+                                {
+                                    label: 'Meters Produced',
+                                    data: data.graph_data.meters,
+                                    borderColor: 'rgb(75, 192, 192)',
+                                    tension: 0.1,
+                                    fill: false
+                                },
+                                {
+                                    label: 'Salary Paid (₹)',
+                                    data: data.graph_data.salary,
+                                    borderColor: 'rgb(255, 99, 132)',
+                                    tension: 0.1,
+                                    fill: false,
+                                    yAxisID: 'y1', // Use a second Y-axis for salary
+                                }
+                            ]
                         },
                         options: {
                             responsive: true,
@@ -1767,40 +1853,340 @@
                                     beginAtZero: true,
                                     title: {
                                         display: true,
-                                        text: 'Value'
+                                        text: 'Meters'
                                     }
                                 },
-                                x: {
+                                y1: { // Second Y-axis for salary
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'right',
+                                    beginAtZero: true,
+                                    grid: {
+                                        drawOnChartArea: false, // Only draw grid lines for the first Y-axis
+                                    },
                                     title: {
                                         display: true,
-                                        text: `Period (${period.charAt(0).toUpperCase() + period.slice(1)})`
+                                        text: 'Salary (₹)'
                                     }
                                 }
                             },
                             plugins: {
                                 title: {
                                     display: true,
-                                    text: `Production and Salary by ${period.charAt(0).toUpperCase() + period.slice(1)} for ${loomerName}`,
-                                    font: {
-                                        size: 16
-                                    }
+                                    text: 'Production Metrics Over Time'
                                 }
                             }
                         }
                     });
                     showNotification('graphGeneratedSuccess', 'success');
                 } else {
+                    productionChartCanvas.classList.add('hidden'); // Hide canvas if no data
                     noGraphDataMessage.classList.remove('hidden');
                     showNotification('noGraphDataFound', 'info');
                 }
-
             } catch (error) {
                 showNotification('networkError', 'error');
                 console.error("Client-side Fetch Error:", error);
             } finally {
-                toggleSpinner('generateGraphBtn', false);
+                toggleSpinner('generateGraphBtn', false); // Spinner hides
             }
         });
+
+
+        // --- WARP MANAGEMENT JAVASCRIPT (Now integrated into Admin Tools) ---
+
+        // Helper function to fetch and display current total warp
+        async function fetchCurrentTotalWarp() {
+            const currentTotalWarpSpan = document.getElementById('currentTotalWarp');
+            if (!currentTotalWarpSpan) return; // Exit if element not found
+
+            try {
+                const response = await fetch('/get_current_warp'); // New backend endpoint
+                if (response.status === 401 || response.status === 403) {
+                    showNotification('sessionExpired', 'error');
+                    setTimeout(() => window.location.href = '/login', 1500);
+                    return;
+                }
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    showNotification(errorData.message || 'Failed to fetch current warp.', 'error');
+                    return;
+                }
+                const data = await response.json();
+                currentWarpValue = parseFloat(data.total_warp); // Ensure it's parsed as a float
+                currentTotalWarpSpan.textContent = currentWarpValue.toFixed(2); // Display with 2 decimal places
+            } catch (error) {
+                showNotification('networkError', 'error');
+                console.error("Client-side Fetch Error (Current Warp):", error);
+            }
+        }
+
+        // Helper function to fetch and display warp history
+        async function fetchWarpHistory() {
+            const historyTableBody = document.getElementById('warpHistoryTableBody');
+            const noWarpHistoryMessage = document.getElementById('noWarpHistoryMessage');
+            historyTableBody.innerHTML = '<tr><td colspan="6" class="px-4 py-2 text-center text-gray-500">Loading history...</td></tr>'; // Adjusted colspan
+
+            try {
+                const response = await fetch('/get_warp_history'); // New backend endpoint
+                if (response.status === 401 || response.status === 403) {
+                    showNotification('sessionExpired', 'error');
+                    setTimeout(() => window.location.href = '/login', 1500);
+                    return;
+                }
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    showNotification(errorData.message || 'Failed to fetch warp history.', 'error');
+                    historyTableBody.innerHTML = '<tr><td colspan="6" class="px-4 py-2 text-center text-gray-500">Failed to load history.</td></tr>'; // Adjusted colspan
+                    return;
+                }
+                const data = await response.json();
+
+                historyTableBody.innerHTML = ''; // Clear loading message
+                if (data.history && data.history.length > 0) {
+                    noWarpHistoryMessage.classList.add('hidden');
+                    data.history.forEach(record => {
+                        const row = historyTableBody.insertRow();
+                        const changeValue = parseFloat(record.value_change);
+                        const changeColorClass = changeValue > 0 ? 'text-green-600' : (changeValue < 0 ? 'text-red-600' : 'text-gray-600');
+                        
+                        // Use date_formatted directly from backend, which is just the date
+                        const dateString = record.date_formatted || 'N/A'; 
+
+                        row.innerHTML = `
+                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${dateString}</td>
+                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${record.username || 'N/A'}</td>
+                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${record.change_type}</td>
+                            <td class="px-4 py-2 whitespace-nowrap text-sm ${changeColorClass}">${changeValue >= 0 ? '+' : ''}${changeValue.toFixed(2)}</td>
+                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${parseFloat(record.new_total_warp).toFixed(2)}</td>
+                            <td class="px-4 py-2 text-sm text-gray-900">${record.remarks || '-'}</td>
+                        `;
+                    });
+                } else {
+                    noWarpHistoryMessage.classList.remove('hidden');
+                    historyTableBody.innerHTML = '<tr><td colspan="6" class="px-4 py-2 text-center text-gray-500">No history to display.</td></tr>'; // Adjusted colspan
+                }
+            } catch (error) {
+                showNotification('networkError', 'error');
+                console.error("Client-side Fetch Error (Warp History):", error);
+                historyTableBody.innerHTML = '<tr><td colspan="6" class="px-4 py-2 text-center text-gray-500">Failed to load history.</td></tr>'; // Adjusted colspan
+            }
+        }
+
+        // Event listener for Update Warp Form submission
+        document.getElementById('updateWarpForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            toggleSpinner('updateWarpBtn', true); // No text needed, spinner replaces
+            const formData = new FormData(e.target);
+            const value = parseFloat(formData.get('value'));
+            const date = formData.get('date'); // Get the date
+            const remarks = formData.get('remarks');
+
+            if (isNaN(value)) {
+                showNotification('invalidWarpValue', 'error');
+                toggleSpinner('updateWarpBtn', false); // Ensure spinner hides
+                return;
+            }
+
+            try {
+                const response = await fetch('/update_warp', { // New backend endpoint
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ value: value, date: date, remarks: remarks }) // Include date
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    showNotification('sessionExpired', 'error');
+                    setTimeout(() => window.location.href = '/login', 1500);
+                    return;
+                }
+
+                const data = await response.json();
+                if (response.ok && data.status === 'success') {
+                    showNotification('warpUpdateSuccess', 'success');
+                    e.target.reset(); // Clear the form
+                    // Set default date for new warp date inputs
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('warpUpdateDate').value = today;
+                    document.getElementById('knottingDate').value = today;
+
+                    fetchCurrentTotalWarp(); // Refresh current warp display
+                    fetchWarpHistory();     // Refresh history
+                } else {
+                    showNotification(data.message || 'failedToUpdateWarp', 'error');
+                }
+            } catch (error) {
+                showNotification('networkError', 'error');
+                console.error("Client-side Fetch Error (Update Warp):", error);
+            } finally {
+                toggleSpinner('updateWarpBtn', false); // Spinner hides
+            }
+        });
+
+        // Event listener for Generate Knotting Form submission
+        document.getElementById('applyKnottingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            toggleSpinner('applyKnottingBtn', true); // No text needed, spinner replaces
+            
+            const formData = new FormData(e.target);
+            const knottingValue = parseFloat(formData.get('knotting_value'));
+            const currentTotalWarp = currentWarpValue; 
+
+            if (isNaN(knottingValue) || knottingValue < 0) {
+                showNotification('invalidKnottingValue', 'error');
+                toggleSpinner('applyKnottingBtn', false); 
+                document.getElementById('knottingResultDisplay').classList.add('hidden'); 
+                return;
+            }
+
+            if (isNaN(currentTotalWarp)) { 
+                showNotification('Failed to get current warp for calculation. Please refresh the page.', 'error');
+                toggleSpinner('applyKnottingBtn', false); 
+                document.getElementById('knottingResultDisplay').classList.add('hidden'); 
+                return;
+            }
+
+            if (knottingValue > currentTotalWarp) { 
+                if (!await showCustomConfirm(`Knotting value (${knottingValue}) is greater than current total warp (${currentTotalWarp}). Are you sure you want to proceed? This calculation will result in a negative value.`)) {
+                    toggleSpinner('applyKnottingBtn', false); 
+                    document.getElementById('knottingResultDisplay').classList.add('hidden'); 
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch('/apply_knotting', { 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        knotting_value: knottingValue, 
+                        current_total_warp: currentTotalWarp 
+                    }) 
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    showNotification('sessionExpired', 'error');
+                    setTimeout(() => window.location.href = '/login', 1500);
+                    return;
+                }
+
+                const data = await response.json();
+                const calculatedRemainingWarpSpan = document.getElementById('calculatedRemainingWarp');
+                const knottingResultDisplay = document.getElementById('knottingResultDisplay');
+
+                if (response.ok && data.status === 'success') {
+                    showNotification('knottingAppliedSuccess', 'success'); 
+                    
+                    calculatedRemainingWarpSpan.textContent = parseFloat(data.calculated_remaining_warp).toFixed(2);
+                    knottingResultDisplay.classList.remove('hidden'); 
+
+                    document.getElementById('knottingCountValue').value = ''; 
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('warpUpdateDate').value = today;
+                    document.getElementById('knottingDate').value = today;
+
+                } else {
+                    showNotification(data.message || 'failedToApplyKnotting', 'error');
+                    knottingResultDisplay.classList.add('hidden'); 
+                }
+            } catch (error) {
+                showNotification('networkError', 'error');
+                console.error("Client-side Fetch Error (Generate Knotting):", error);
+                document.getElementById('knottingResultDisplay').classList.add('hidden'); 
+            } finally {
+                toggleSpinner('applyKnottingBtn', false); 
+            }
+        });
+
+        // New function to clear warp history
+        async function clearWarpHistory() {
+            if (!await showCustomConfirm(notifications.confirmClearWarpHistory)) {
+                return;
+            }
+
+            toggleSpinner('clearWarpHistoryBtn', true); // No text needed, spinner replaces
+            try {
+                const response = await fetch('/clear_warp_history', { // New backend endpoint
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    showNotification('sessionExpired', 'error');
+                    setTimeout(() => window.location.href = '/login', 1500);
+                    return;
+                }
+
+                const data = await response.json();
+                if (response.ok && data.status === 'success') {
+                    showNotification('warpHistoryCleared', 'success');
+                    fetchWarpHistory(); // Refresh history table
+                } else {
+                    showNotification(data.message || 'failedToClearWarpHistory', 'error');
+                }
+            } catch (error) {
+                showNotification('networkError', 'error');
+                console.error("Client-side Fetch Error (Clear Warp History):", error);
+            } finally {
+                toggleSpinner('clearWarpHistoryBtn', false); // Spinner hides
+            }
+        }
+
+        // Attach event listener for Clear Warp History button
+        document.getElementById('clearWarpHistoryBtn').addEventListener('click', clearWarpHistory);
+
+        // Fetch users for admin panel (existing function)
+        async function fetchUsers() {
+            const usersTableBody = document.getElementById('usersTableBody');
+            const usersTable = document.getElementById('usersTable');
+            const noUsersMessage = document.getElementById('noUsersMessage');
+            toggleSpinner('refreshUsersBtn', true); // No text needed, spinner replaces
+            usersTableBody.innerHTML = '<tr><td colspan="3" class="px-4 py-2 text-center text-gray-500">Loading users...</td></tr>';
+            usersTable.classList.add('hidden');
+            noUsersMessage.classList.add('hidden');
+
+            try {
+                const response = await fetch('/admin/get_users');
+                if (response.status === 401 || response.status === 403) {
+                    showNotification('sessionExpired', 'error');
+                    setTimeout(() => window.location.href = '/login', 1500);
+                    return;
+                }
+                const data = await response.json();
+                usersTableBody.innerHTML = ''; // Clear loading message
+
+                if (response.ok && data.status === 'success' && data.users.length > 0) {
+                    usersTable.classList.remove('hidden');
+                    data.users.forEach(user => {
+                        const row = usersTableBody.insertRow();
+                        row.innerHTML = `
+                            <td class="px-4 py-2">${user.username}</td>
+                            <td class="px-4 py-2">${user.role}</td>
+                            <td class="px-4 py-2 text-xs">${user._id}</td>
+                        `;
+                    });
+                } else {
+                    noUsersMessage.classList.remove('hidden');
+                    usersTable.classList.add('hidden');
+                    usersTableBody.innerHTML = '<tr><td colspan="3" class="px-4 py-2 text-center text-gray-500">No users found.</td></tr>';
+                }
+            } catch (error) {
+                showNotification('failedToFetchUsers', 'error');
+                console.error("Failed to fetch users:", error);
+                usersTableBody.innerHTML = '<tr><td colspan="3" class="px-4 py-2 text-center text-red-500">Error loading users.</td></tr>';
+            } finally {
+                toggleSpinner('refreshUsersBtn', false); // Spinner hides
+            }
+        }
+
+        // Event listener for Refresh Users button
+        document.getElementById('refreshUsersBtn').addEventListener('click', fetchUsers);
     </script>
 </body>
 </html>
