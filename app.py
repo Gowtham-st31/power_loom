@@ -1160,26 +1160,46 @@ def get_warp_history(client, db, loom_collection, users_collection, warp_data_co
         for record in history_records:
             # Convert ObjectId to string for JSON serialization
             record['_id'] = str(record['_id'])
-            # Convert datetime to ISO format string for JSON serialization
-            # Only format date, not time, as per user request
+            
+            # Format the 'timestamp' (when the record was created)
             if 'timestamp' in record and isinstance(record['timestamp'], datetime):
-                # Convert to IST for display
                 ist_timestamp = pytz.utc.localize(record['timestamp']).astimezone(IST)
-                record['date_formatted'] = ist_timestamp.strftime("%Y-%m-%d") # Format as THAT-MM-DD
+                record['record_timestamp_formatted'] = ist_timestamp.strftime("%Y-%m-%d %H:%M:%S") # Add time for clarity
             else:
-                record['date_formatted'] = 'N/A' # Fallback
+                record['record_timestamp_formatted'] = 'N/A' # Fallback
+
+            # Format the 'date' field (the date selected by the user for the event)
+            if 'date' in record and isinstance(record['date'], datetime):
+                # The 'date' stored in DB is already UTC midnight for the selected date.
+                # Convert it to IST for display.
+                ist_event_date = pytz.utc.localize(record['date']).astimezone(IST)
+                record['event_date_formatted'] = ist_event_date.strftime("%Y-%m-%d") # Format as YYYY-MM-DD
+            else:
+                record['event_date_formatted'] = 'N/A' # Fallback
 
             # Ensure value_change and new_total_warp are floats for consistent display
             record['value_change'] = float(record.get('value_change', 0.0))
             record['new_total_warp'] = float(record.get('new_total_warp', 0.0))
 
-            history_data.append(record)
+            # Only include relevant fields for the frontend
+            history_data.append({
+                '_id': record['_id'],
+                'record_timestamp': record['record_timestamp_formatted'], # When the record was created
+                'event_date': record['event_date_formatted'],             # The date the user selected for the event
+                'user_id': record.get('user_id'),
+                'username': record.get('username'),
+                'change_type': record.get('change_type'),
+                'value_change': record['value_change'],
+                'new_total_warp': record['new_total_warp'],
+                'remarks': record.get('remarks', '')
+            })
         
         app.logger.info(f"User '{session['username']}' fetched warp history ({len(history_data)} records).")
         return jsonify({'status': 'success', 'history': history_data}), 200
     except Exception as e:
         app.logger.error(f"Failed to get warp history for user '{session['username']}': {str(e)}", exc_info=True)
         return jsonify({'status': 'error', 'message': 'Failed to retrieve warp history due to an internal error.'}), 500
+
 
 @app.route('/clear_warp_history', methods=['POST'])
 @login_required
