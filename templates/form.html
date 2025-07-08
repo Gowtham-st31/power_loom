@@ -257,10 +257,9 @@
         <!-- Navigation Menu -->
         <nav class="mb-8 bg-indigo-700 rounded-lg shadow-xl">
             <ul class="flex flex-col sm:flex-row justify-around p-4 text-white font-medium">
-                <li id="navHomeLink"><a href="#" id="navHome" class="block py-2 px-4 rounded-md hover:bg-indigo-600 transition duration-200 text-lg">Enter Data</a></li>
+                <li id="navHomeLink" class="hidden"><a href="#" id="navHome" class="block py-2 px-4 rounded-md hover:bg-indigo-600 transition duration-200 text-lg">Enter Data</a></li>
                 <li><a href="#" id="navReport" class="block py-2 px-4 rounded-md hover:bg-indigo-600 transition duration-200 text-lg">Reports</a></li>
                 <li><a href="#" id="navGraphs" class="block py-2 px-4 rounded-md hover:bg-indigo-600 transition duration-200 text-lg">Graphs</a></li>
-                <!-- Removed navWarpLink from here -->
                 <li id="navAdminLink" class="hidden">
                     <a href="#" id="navAdmin" class="block py-2 px-4 rounded-md hover:bg-indigo-600 transition duration-200 text-lg">Admin Tools</a>
                 </li>
@@ -938,7 +937,7 @@
                 const adminSection = document.getElementById('adminSection');
                 const navAdminLink = document.getElementById('navAdminLink');
                 const navHomeLink = document.getElementById('navHomeLink'); // Get the 'Enter Data' list item
-                // Removed navWarpLink from here as it's now a tab within Admin Tools
+                
                 const dataLoomerNameInput = document.getElementById('data_loomer_name'); // New ID
                 const reportLoomerNameInput = document.getElementById('report_loomer_name'); // New ID
                 const loomerNameReportHint = document.getElementById('loomerNameReportHint');
@@ -949,7 +948,7 @@
                 if (role === 'admin') {
                     navAdminLink.classList.remove('hidden');
                     navHomeLink.classList.remove('hidden'); // Ensure 'Enter Data' is visible for admin
-                    // navWarpLink.classList.remove('hidden'); // No longer needed here
+                    
                     dataLoomerNameInput.readOnly = false;
                     dataLoomerNameInput.value = ''; 
 
@@ -964,7 +963,7 @@
                     dataEntrySection.classList.add('hidden'); // Loomers don't add data
                     adminSection.classList.add('hidden'); 
                     navAdminLink.classList.add('hidden'); 
-                    // navWarpLink.classList.add('hidden'); // No longer needed here
+                    navHomeLink.classList.add('hidden'); // Hide 'Enter Data' nav link for loomers
 
                     dataLoomerNameInput.value = username; 
                     dataLoomerNameInput.readOnly = true; 
@@ -1016,7 +1015,7 @@
                 if (navAdmin) { 
                     navAdmin.addEventListener('click', (e) => { e.preventDefault(); showSection('adminSection'); /* fetchUsers() is called by activateAdminTab */ });
                 }
-                // Removed Warp Menu Link Listener from here
+                
 
                 // Admin tab navigation
                 document.querySelectorAll('#adminSection .tab-button').forEach(button => {
@@ -2174,7 +2173,7 @@
                 } else {
                     noUsersMessage.classList.remove('hidden');
                     usersTable.classList.add('hidden');
-                    usersTableBody.innerHTML = '<tr><td colspan="3" class="px-4 py-2 text-center text-gray-500">No users found.</td></tr>';
+                    usersTableBody.innerHTML = '<tr><td colspan="3" class="px-4 py-2 text-center text-red-500">Error loading users.</td></tr>';
                 }
             } catch (error) {
                 showNotification('failedToFetchUsers', 'error');
