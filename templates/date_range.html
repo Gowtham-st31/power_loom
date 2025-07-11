@@ -1,27 +1,19 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Meter Report by Date Range</title>
-</head>
+<head><title>Date Range</title></head>
 <body>
-    <h2>Get Total Meters by Date Range</h2>
-    <form action="/get_meters" method="POST">
-        <label>Loomer Name:</label>
-        <input type="text" name="loomer_name" required><br><br>
-
-        <label>Shift:</label>
-        <select name="shift" required>
+    <h2>Get Meter Total by Date</h2>
+    <form method="POST">
+        Loomer Name: <input type="text" name="loomer_name" required><br><br>
+        Shift:
+        <select name="shift">
             <option value="Day">Day</option>
             <option value="Night">Night</option>
         </select><br><br>
-
-        <label>From Date:</label>
-        <input type="date" name="from_date" required><br><br>
-
-        <label>To Date:</label>
-        <input type="date" name="to_date" required><br><br>
-
-        <button type="submit">Get Total</button>
+        From: <input type="date" name="from_date" required><br><br>
+        To: <input type="date" name="to_date" required><br><br>
+        <button type="submit" formaction="/get_meters">Get Total</button>
+        <button type="submit" formaction="/download_pdf">Download PDF</button>
     </form>
 </body>
 </html>

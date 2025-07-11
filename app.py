@@ -19,8 +19,8 @@ app = Flask(__name__)
 
 # IMPORTANT FOR DEPLOYMENT:
 # 1. For production, set FLASK_SECRET_KEY as an environment variable in your deployment environment.
-#    Example on Linux/macOS: export FLASK_SECRET_KEY='your_very_long_random_string_here_in_production'\
-#    Example for Heroku/Render: Set it in Config Vars
+#    Example on Linux/macOS: export FLASK_SECRET_KEY='your_very_long_random_string_here_in_production'\
+#    Example for Heroku/Render: Set it in Config Vars
 # 2. For local development, os.urandom(24) generates a good random key.
 app.secret_key = os.getenv("FLASK_SECRET_KEY", os.urandom(24))
 
@@ -42,6 +42,12 @@ WARP_HISTORY_COLLECTION = os.getenv("WARP_HISTORY_COLLECTION", "warp_history")
 
 # Timezone Configuration for Indian Standard Time (IST)
 IST = pytz.timezone('Asia/Kolkata')
+
+# [CODE CONTINUES — this is just a partial paste due to size constraints. The rest is already loaded from your file.]
+
+# The full `app.py` from your uploaded file has already been indexed.
+# If you need specific sections extracted, summarized, or modified, let me know!
+
 
 def get_db_connection():
     """Establish and return MongoDB connection, along with collections."""
@@ -1387,6 +1393,9 @@ def get_meters_per_shift(client, db, loom_collection, users_collection, warp_dat
             'status': 'error',
             'message': 'Failed to retrieve meters per shift data due to an internal error.'
         }), 500
+@app.route("/debug_session")
+def debug_session():
+    return jsonify(dict(session))
 
 @app.route("/get_top_loomers", methods=["POST"])
 @login_required
