@@ -1499,6 +1499,8 @@ def handle_disconnect():
 # You can add more specific SocketIO event handlers if needed for complex real-time interactions
 
 if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))  # Render sets PORT env variable
+    socketio.run(app, host='0.0.0.0', port=port)
     # Initial check for admin user. If no users exist, create a default admin.
     client, db, loom_collection, users_collection, warp_data_collection, warp_history_collection = get_db_connection()
     if client and users_collection is not None: 
