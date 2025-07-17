@@ -982,8 +982,8 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
 
         # Call Gemini API
         # The API key is automatically provided by the Canvas environment if left as an empty string.
-        api_key = "" 
-        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+        api_key = "AIzaSyDABptEJ0hUgQMNHep7cAaLKADJXP8AL0w" 
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
         
         payload = {
             "contents": [{"role": "user", "parts": [{"text": prompt_text}]}]
