@@ -367,6 +367,10 @@
                     <button type="submit" id="generateReportBtn" class="btn btn-primary w-full py-3 px-4 rounded-lg flex items-center justify-center text-lg">
                         <span id="generateReportBtnText">Generate Report</span><span id="generateReportSpinner" class="spinner hidden"></span>
                     </button>
+                    <!-- AI Analysis Button - Added -->
+                    <button type="button" id="analyzeReportBtn" class="btn bg-purple-600 text-white w-full py-3 px-4 rounded-lg flex items-center justify-center text-lg shadow-md mt-4">
+                        <span id="analyzeReportBtnText">Analyze Report with AI</span><span id="analyzeReportSpinner" class="spinner hidden"></span>
+                    </button>
                 </form>
 
                 <div id="resultContainer" class="mt-8 hidden">
@@ -378,6 +382,33 @@
                         <p class="text-sm text-gray-600 mt-2">for the selected criteria</p>
                     </div>
                 </div>
+
+                <!-- AI Analysis Response Box -->
+                <div id="aiResponseContainer" class="llm-response-box mt-8 hidden">
+                    <h3 class="font-bold text-blue-800 text-xl mb-3">AI Analysis & Insights</h3>
+                    <div id="aiAnalysisContent">
+                        <!-- AI analysis will be injected here -->
+                    </div>
+                    <p id="noAiAnalysisMessage" class="text-gray-600 text-center mt-4 hidden">No AI analysis available for the current report.</p>
+                </div>
+
+                <!-- AI Follow-up Question Section - NEW -->
+                <div id="aiFollowUpSection" class="llm-response-box mt-8 hidden">
+                    <h3 class="font-bold text-blue-800 text-xl mb-3">Ask Follow-up Question</h3>
+                    <div class="form-group mb-4">
+                        <label for="aiQuestionInput" class="block text-gray-700 mb-1 font-semibold">Your Question:</label>
+                        <textarea id="aiQuestionInput" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition duration-200 shadow-sm" placeholder="e.g., 'What are the main reasons for low production on Loom 4?'"></textarea>
+                    </div>
+                    <button type="button" id="askAiQuestionBtn" class="btn bg-blue-600 text-white w-full py-3 px-4 rounded-lg flex items-center justify-center text-lg shadow-md">
+                        <span id="askAiQuestionBtnText">Ask AI</span><span id="askAiQuestionSpinner" class="spinner hidden"></span>
+                    </button>
+                    <div id="aiFollowUpAnswerContent" class="mt-4">
+                        <!-- AI's answer to follow-up questions will be displayed here -->
+                    </div>
+                    <p id="noAiFollowUpAnswerMessage" class="text-gray-600 text-center mt-4 hidden">No answer from AI yet. Ask a question above.</p>
+                </div>
+                <!-- End AI Follow-up Question Section -->
+
 
                 <!-- Report Tabs -->
                 <div class="mt-8">
@@ -484,7 +515,12 @@
                     <form id="addUserForm" class="space-y-4">
                         <div class="form-group">
                             <label class="block text-gray-700 mb-1 font-semibold">Username</label>
-                            <input type="text" name="username" id="newUsernameInput" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition duration-200 shadow-sm">
+                            <div class="flex space-x-2">
+                                <input type="text" name="username" id="newUsernameInput" required class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition duration-200 shadow-sm">
+                                <button type="button" id="suggestLoomerNameBtn" class="btn bg-gray-400 text-white px-3 py-2 rounded-lg hover:bg-gray-500 text-sm shadow-md">
+                                    <span id="suggestLoomerNameBtnText">Suggest</span><span id="suggestLoomerNameSpinner" class="spinner hidden"></span>
+                                </button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label class="block text-gray-700 mb-1 font-semibold">Password</label>
@@ -590,7 +626,7 @@
                 </div>
 
                 <!-- Tab Content: All Users List -->
-                <div id="listUsersTabContent" class="tab-content hidden">
+                <div id="listUsersTabContent" class="tab-content">
                     <h3 class="text-xl font-semibold text-indigo-600 mb-4">All Users</h3>
                     <button type="button" id="refreshUsersBtn" class="btn bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 mb-4 flex items-center justify-center text-lg shadow-md">
                         <span id="refreshUsersBtnText">Refresh User List</span><span id="refreshUsersSpinner" class="spinner hidden"></span>
@@ -754,7 +790,14 @@
             noRecordsFound: "No records found for the selected criteria.", 
             warpHistoryCleared: "Warp history cleared successfully!",
             failedToClearWarpHistory: "Failed to clear warp history.",
-            confirmClearWarpHistory: "Are you sure you want to clear ALL warp history? This action cannot be undone."
+            confirmClearWarpHistory: "Are you sure you want to clear ALL warp history? This action cannot be undone.",
+            aiAnalysisGenerated: "AI analysis generated successfully!", // New
+            failedToGenerateAiAnalysis: "Failed to generate AI analysis.", // New
+            noDataForAiAnalysis: "No data found for the selected criteria to analyze.", // New
+            aiSuggestionGenerated: "AI loomer name suggested successfully!", // New
+            failedToGenerateAiSuggestion: "Failed to generate AI loomer name suggestion.", // New
+            aiQuestionAnswered: "AI answered your question!", // New
+            failedToAnswerAiQuestion: "Failed to get AI answer." // New
         };
 
         function showNotification(messageKey, type = 'success', params = {}) {
@@ -834,6 +877,12 @@
                 activateReportTab('detailedRecords'); // Default to Detailed Records tab
             }
             // Warp section content is now part of admin tools, so its data fetching is tied to admin tab activation
+            
+            // Always hide AI follow-up section when changing main sections
+            document.getElementById('aiFollowUpSection').classList.add('hidden');
+            document.getElementById('aiFollowUpAnswerContent').innerHTML = '';
+            document.getElementById('aiQuestionInput').value = '';
+            document.getElementById('noAiFollowUpAnswerMessage').classList.add('hidden');
         }
 
         /**
@@ -948,6 +997,7 @@
                 const reportLoomerNameInput = document.getElementById('report_loomer_name'); // New ID
                 const loomerNameReportHint = document.getElementById('loomerNameReportHint');
                 const graphLoomerNameInput = document.getElementById('graph_loomer_name'); // New ID
+                const analyzeReportBtn = document.getElementById('analyzeReportBtn'); // New button
 
                 let initialSection = 'reportSection'; // Default for loomers
 
@@ -961,6 +1011,7 @@
                     reportLoomerNameInput.readOnly = false;
                     reportLoomerNameInput.value = 'all'; 
                     loomerNameReportHint.classList.remove('hidden');
+                    analyzeReportBtn.classList.remove('hidden'); // Show for admin
 
                     graphLoomerNameInput.readOnly = false;
                     graphLoomerNameInput.value = 'all'; 
@@ -970,6 +1021,7 @@
                     adminSection.classList.add('hidden'); 
                     navAdminLink.classList.add('hidden'); 
                     navHomeLink.classList.add('hidden'); // Hide 'Enter Data' nav link for loomers
+                    analyzeReportBtn.classList.add('hidden'); // Hide for loomer
 
                     dataLoomerNameInput.value = username; 
                     dataLoomerNameInput.readOnly = true; 
@@ -1093,6 +1145,13 @@
             document.getElementById('reportTable').innerHTML = ''; // Clear previous report data
             document.getElementById('loomSubtotalsTable').innerHTML = '';
             document.getElementById('dailySubtotalsTable').innerHTML = '';
+            document.getElementById('aiResponseContainer').classList.add('hidden'); // Hide AI analysis container
+            document.getElementById('aiAnalysisContent').innerHTML = ''; // Clear AI analysis content
+            document.getElementById('aiFollowUpSection').classList.add('hidden'); // NEW: Hide AI follow-up section
+            document.getElementById('aiFollowUpAnswerContent').innerHTML = ''; // NEW: Clear follow-up answer
+            document.getElementById('aiQuestionInput').value = ''; // NEW: Clear question input
+            document.getElementById('noAiFollowUpAnswerMessage').classList.add('hidden'); // NEW: Hide follow-up message
+
             // Clear graph if exists
             if (productionChartInstance) {
                 productionChartInstance.destroy();
@@ -1264,6 +1323,13 @@
                 const loomSubtotalsTableDiv = document.getElementById('loomSubtotalsTable');
                 const dailySubtotalsContainer = document.getElementById('dailySubtotalsTabContent'); // Changed to tab content
                 const dailySubtotalsTableDiv = document.getElementById('dailySubtotalsTable');     // New
+                const aiResponseContainer = document.getElementById('aiResponseContainer'); // New
+                const aiAnalysisContent = document.getElementById('aiAnalysisContent'); // New
+                const noAiAnalysisMessage = document.getElementById('noAiAnalysisMessage'); // New
+                const aiFollowUpSection = document.getElementById('aiFollowUpSection'); // NEW
+                const aiFollowUpAnswerContent = document.getElementById('aiFollowUpAnswerContent'); // NEW
+                const aiQuestionInput = document.getElementById('aiQuestionInput'); // NEW
+                const noAiFollowUpAnswerMessage = document.getElementById('noAiFollowUpAnswerMessage'); // NEW
 
 
                 reportTableDiv.innerHTML = '';
@@ -1275,6 +1341,14 @@
                 loomSubtotalsTableDiv.innerHTML = ''; // Clear previous subtotals
                 dailySubtotalsContainer.classList.add('hidden'); // Hide daily subtotals tab content by default
                 dailySubtotalsTableDiv.innerHTML = ''; // Clear previous daily subtotals
+                aiResponseContainer.classList.add('hidden'); // Hide AI analysis by default
+                aiAnalysisContent.innerHTML = ''; // Clear previous AI analysis
+                noAiAnalysisMessage.classList.add('hidden'); // Hide no AI message
+                aiFollowUpSection.classList.add('hidden'); // NEW: Hide AI follow-up section
+                aiFollowUpAnswerContent.innerHTML = ''; // NEW: Clear follow-up answer
+                aiQuestionInput.value = ''; // NEW: Clear question input
+                noAiFollowUpAnswerMessage.classList.add('hidden'); // NEW: Hide follow-up message
+
 
                 if (response.ok) {
                     totalMetersSpan.textContent = data.total_meters || 0;
@@ -1638,6 +1712,38 @@
             }
         });
 
+        // Event listener for Suggest Loomer Name button - Added
+        document.getElementById('suggestLoomerNameBtn').addEventListener('click', async () => {
+            const newUsernameInput = document.getElementById('newUsernameInput');
+            toggleSpinner('suggestLoomerNameBtn', true);
+
+            try {
+                const response = await fetch('/admin/suggest_loomer_name', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' } // Even if no body, some APIs expect this
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    showNotification('sessionExpired', 'error');
+                    setTimeout(() => window.location.href = '/login', 1500);
+                    return;
+                }
+
+                const data = await response.json();
+                if (response.ok && data.status === 'success') {
+                    newUsernameInput.value = data.suggested_name;
+                    showNotification('aiSuggestionGenerated', 'success');
+                } else {
+                    showNotification(data.message || 'failedToGenerateAiSuggestion', 'error');
+                }
+            } catch (error) {
+                showNotification('networkError', 'error');
+                console.error("Client-side Fetch Error (Suggest Loomer Name):", error);
+            } finally {
+                toggleSpinner('suggestLoomerNameBtn', false);
+            }
+        });
+
 
         document.getElementById('updatePasswordForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1896,6 +2002,150 @@
                 toggleSpinner('generateGraphBtn', false); // Spinner hides
             }
         });
+
+        // Event listener for Analyze Report with AI button
+        document.getElementById('analyzeReportBtn').addEventListener('click', async () => {
+            const dataQueryForm = document.getElementById('dataQueryForm');
+            const formData = new FormData(dataQueryForm);
+            const aiResponseContainer = document.getElementById('aiResponseContainer');
+            const aiAnalysisContent = document.getElementById('aiAnalysisContent');
+            const noAiAnalysisMessage = document.getElementById('noAiAnalysisMessage');
+            const aiFollowUpSection = document.getElementById('aiFollowUpSection'); // NEW
+            const aiFollowUpAnswerContent = document.getElementById('aiFollowUpAnswerContent'); // NEW
+            const aiQuestionInput = document.getElementById('aiQuestionInput'); // NEW
+            const noAiFollowUpAnswerMessage = document.getElementById('noAiFollowUpAnswerMessage'); // NEW
+
+            toggleSpinner('analyzeReportBtn', true);
+            aiResponseContainer.classList.add('hidden');
+            aiAnalysisContent.innerHTML = '';
+            noAiAnalysisMessage.classList.add('hidden');
+            aiFollowUpSection.classList.add('hidden'); // NEW: Hide follow-up section initially
+            aiFollowUpAnswerContent.innerHTML = ''; // NEW: Clear follow-up answer
+            aiQuestionInput.value = ''; // NEW: Clear question input
+            noAiFollowUpAnswerMessage.classList.add('hidden'); // NEW: Hide follow-up message
+
+            try {
+                const response = await fetch('/analyze_report_with_ai', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    showNotification('sessionExpired', 'error');
+                    setTimeout(() => window.location.href = '/login', 1500);
+                    return;
+                }
+
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Server response was not JSON:', text);
+                    showNotification('networkError', 'error');
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (response.ok && data.status === 'success' && data.ai_analysis) {
+                    aiAnalysisContent.innerHTML = formatAiResponse(data.ai_analysis); // Format markdown
+                    aiResponseContainer.classList.remove('hidden');
+                    aiFollowUpSection.classList.remove('hidden'); // NEW: Show follow-up section on success
+                    showNotification('aiAnalysisGenerated', 'success');
+                } else if (data.status === 'info') {
+                    noAiAnalysisMessage.classList.remove('hidden');
+                    showNotification('noDataForAiAnalysis', 'info');
+                } else {
+                    showNotification(data.message || 'failedToGenerateAiAnalysis', 'error');
+                }
+            } catch (error) {
+                showNotification('networkError', 'error');
+                console.error("Client-side Fetch Error (AI Analysis):", error);
+            } finally {
+                toggleSpinner('analyzeReportBtn', false);
+            }
+        });
+
+        // NEW: Event listener for Ask AI Question button
+        document.getElementById('askAiQuestionBtn').addEventListener('click', async () => {
+            const aiQuestionInput = document.getElementById('aiQuestionInput');
+            const question = aiQuestionInput.value.trim();
+            const aiFollowUpAnswerContent = document.getElementById('aiFollowUpAnswerContent');
+            const noAiFollowUpAnswerMessage = document.getElementById('noAiFollowUpAnswerMessage');
+
+            if (!question) {
+                showNotification('Please enter a question.', 'error'); // Direct message, not key
+                return;
+            }
+
+            toggleSpinner('askAiQuestionBtn', true);
+            aiFollowUpAnswerContent.innerHTML = ''; // Clear previous answer
+            noAiFollowUpAnswerMessage.classList.add('hidden'); // Hide no answer message
+
+            try {
+                const formData = new FormData();
+                formData.append('question', question);
+
+                const response = await fetch('/analyze_report_with_ai/ask_question', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    showNotification('sessionExpired', 'error');
+                    setTimeout(() => window.location.href = '/login', 1500);
+                    return;
+                }
+
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Server response was not JSON:', text);
+                    showNotification('networkError', 'error');
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (response.ok && data.status === 'success' && data.ai_answer) {
+                    aiFollowUpAnswerContent.innerHTML = formatAiResponse(data.ai_answer);
+                    showNotification('aiQuestionAnswered', 'success');
+                    aiQuestionInput.value = ''; // Clear input after successful submission
+                } else if (data.status === 'info') {
+                    noAiFollowUpAnswerMessage.classList.remove('hidden');
+                    showNotification(data.message || 'No data found for the original criteria to answer the question.', 'info');
+                }
+                else {
+                    showNotification(data.message || 'failedToAnswerAiQuestion', 'error');
+                }
+            } catch (error) {
+                showNotification('networkError', 'error');
+                console.error("Client-side Fetch Error (AI Follow-up):", error);
+            } finally {
+                toggleSpinner('askAiQuestionBtn', false);
+            }
+        });
+
+
+        // Helper to format AI response (simple Markdown to HTML)
+        function formatAiResponse(text) {
+            let html = text;
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); // Bold
+            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>'); // Italics
+            html = html.replace(/^- (.*)$/gm, '<li>$1</li>'); // List items
+            // Convert multiple newlines to paragraphs, ensuring lists are not affected
+            html = html.replace(/(?<!<\/li>)\n\n(?!<li)/g, '</p><p>'); 
+            html = html.replace(/^(?!<ul|<\/ul>|<p>)/, '<p>'); // Add opening <p> if not already starting with one
+            html = html.replace(/(?<!<\/p>)$/, '</p>'); // Add closing </p> if not ending with one
+            html = html.replace(/\n/g, '<br>'); // Convert single newlines to <br>
+
+            // Handle lists specifically: wrap <li>s in <ul> if not already
+            if (html.includes('<li>') && !html.includes('<ul>')) {
+                html = `<ul>${html}</ul>`;
+            }
+            // Clean up any stray <p></p> tags that might appear due to empty lines
+            html = html.replace(/<p><\/p>/g, '');
+            return html;
+        }
 
 
         // --- WARP MANAGEMENT JAVASCRIPT (Now integrated into Admin Tools) ---
