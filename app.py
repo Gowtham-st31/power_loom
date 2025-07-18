@@ -988,7 +988,7 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
         4.  Potential issues or anomalies.
         """
         
-        app.logger.debug(f"Sending prompt to AI:\n{prompt_text[:500]}...") # Log first 500 chars
+        app.logger.debug(f"Sending prompt to AI:\n{prompt_text[:999999999999999]}...") # Log first 500 chars
 
         # Call Gemini API
         api_key = "AIzaSyDABptEJ0hUgQMNHep7cAaLKADJXP8AL0w" 
