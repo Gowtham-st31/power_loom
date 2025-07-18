@@ -12,6 +12,9 @@ import logging
 # Import SocketIO
 from flask_socketio import SocketIO, emit
 
+# Import requests at the top level to ensure it's always available for AI API calls
+import requests 
+
 # Configure logging to show debug messages
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -43,10 +46,9 @@ WARP_HISTORY_COLLECTION = os.getenv("WARP_HISTORY_COLLECTION", "warp_history")
 # Timezone Configuration for Indian Standard Time (IST)
 IST = pytz.timezone('Asia/Kolkata')
 
-# [CODE CONTINUES — this is just a partial paste due to size constraints. The rest is already loaded from your file.]
-
-# The full `app.py` from your uploaded file has already been indexed.
-# If you need specific sections extracted, summarized, or modified, let me know!
+# Configure the maximum number of detailed records to send to AI for analysis
+# Be cautious when increasing this value, as it can lead to exceeding the AI model's context window
+MAX_DETAILED_RECORDS_FOR_AI = 100 
 
 
 def get_db_connection():
@@ -885,6 +887,7 @@ def get_graph_data(client, db, loom_collection, users_collection, warp_data_coll
 def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_data_collection, warp_history_collection):
     """
     Analyzes loom production report data using the Gemini AI and returns insights.
+    Stores query and summary in session for follow-up questions.
     """
     data = request.form
     loomer_name_input = data.get('loomer_name', '').strip().lower()
@@ -938,6 +941,9 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
         total_salary = sum(record.get("meters", 0) * record.get("salary_per_meter", 0.0) for record in records)
 
         if not records:
+            # Clear previous AI analysis session data if no records found
+            session.pop('last_ai_analysis_query', None)
+            session.pop('last_report_summary', None)
             return jsonify({'status': 'info', 'message': 'No data found for the selected criteria to analyze.'}), 200
 
         # Prepare data for AI prompt
@@ -951,16 +957,20 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
             "loom_number_filter": loom_number_query if loom_number_query else "All Loom Numbers"
         }
         
-        # Limit detailed records sent to AI to avoid exceeding context window
+        # Store query parameters and report summary in session for follow-up questions
+        # Convert datetime objects in query to string for session serialization
+        session['last_ai_analysis_query'] = convert_datetimes_to_iso(query) 
+        session['last_report_summary'] = report_summary
+
+
+        # Limit detailed records sent to AI for the initial prompt to avoid exceeding context window
         detailed_records_for_ai = []
         for i, record in enumerate(records):
-            if i >= 10: # Send up to 10 detailed records for brevity
+            if i >= MAX_DETAILED_RECORDS_FOR_AI: # Use the configurable limit
                 break
-            # Convert datetime objects to string for JSON serialization
-            record_copy = record.copy()
-            if 'date' in record_copy and isinstance(record_copy['date'], datetime):
-                record_copy['date'] = record_copy['date'].strftime("%Y-%m-%d %H:%M:%S UTC")
-            detailed_records_for_ai.append(record_copy)
+            # Apply the convert_datetimes_to_iso helper function to each record copy
+            processed_record = convert_datetimes_to_iso(record.copy())
+            detailed_records_for_ai.append(processed_record)
 
         prompt_text = f"""
         Analyze the following powerloom production data and provide insights, trends, and potential areas for improvement.
@@ -968,7 +978,7 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
         Overall Summary:
         {json.dumps(report_summary, indent=2)}
 
-        Sample Detailed Records (up to 10 records):
+        Sample Detailed Records (up to {MAX_DETAILED_RECORDS_FOR_AI} records):
         {json.dumps(detailed_records_for_ai, indent=2)}
 
         Based on this data, please provide:
@@ -981,7 +991,6 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
         app.logger.debug(f"Sending prompt to AI:\n{prompt_text[:500]}...") # Log first 500 chars
 
         # Call Gemini API
-        # The API key is automatically provided by the Canvas environment if left as an empty string.
         api_key = "AIzaSyDABptEJ0hUgQMNHep7cAaLKADJXP8AL0w" 
         api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
         
@@ -989,14 +998,13 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
             "contents": [{"role": "user", "parts": [{"text": prompt_text}]}]
         }
 
-        import requests
         headers = {'Content-Type': 'application/json'}
         response = requests.post(api_url, headers=headers, json=payload)
         response.raise_for_status() 
         
         ai_result = response.json()
         
-        if ai_result.get('candidates') and ai_result['candidates'][0].get('content') and ai_result['candidates'][0]['content'].get('parts'):
+        if ai_result.get('candidates') and ai_result['candidates'][0].get('content') and ai_result['candidates'][0]['content'].get('parts'): 
             ai_analysis = ai_result['candidates'][0]['content']['parts'][0]['text']
             app.logger.info(f"AI analysis successfully generated for admin '{session['username']}'.")
             return jsonify({
@@ -1005,15 +1013,112 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
                 'message': 'AI analysis generated successfully.'
             }), 200
         else:
-            app.logger.error(f"AI response structure unexpected or missing content for name suggestion: {ai_result}")
-            return jsonify({'status': 'error', 'message': 'Failed to get AI name suggestion: Unexpected AI response format.'}), 500
+            app.logger.error(f"AI response structure unexpected or missing content for AI analysis: {ai_result}")
+            return jsonify({'status': 'error', 'message': 'Failed to get AI analysis: Unexpected AI response format.'}), 500
 
     except requests.exceptions.RequestException as req_e:
-        app.logger.error(f"HTTP request to AI API failed for name suggestion from admin '{session['username']}': {str(req_e)}", exc_info=True)
-        return jsonify({'status': 'error', 'message': f'Failed to get AI name suggestion: Network or API error. Details: {str(req_e)}'}), 500
+        app.logger.error(f"HTTP request to AI API failed for AI analysis from admin '{session['username']}': {str(req_e)}", exc_info=True)
+        return jsonify({'status': 'error', 'message': f'Failed to get AI analysis: Network or API error. Details: {str(req_e)}'}), 500
     except Exception as e:
-        app.logger.error(f"Failed to perform AI name suggestion for admin '{session['username']}': {str(e)}", exc_info=True)
-        return jsonify({'status': 'error', 'message': 'Failed to get AI name suggestion due to an internal server error.'}), 500
+        app.logger.error(f"Failed to perform AI analysis for admin '{session['username']}': {str(e)}", exc_info=True)
+        return jsonify({'status': 'error', 'message': 'Failed to get AI analysis due to an internal server error.'}), 500
+
+
+@app.route("/analyze_report_with_ai/ask_question", methods=["POST"])
+@login_required
+@admin_required
+@handle_db_errors
+def ask_ai_question(client, db, loom_collection, users_collection, warp_data_collection, warp_history_collection):
+    """
+    Handles follow-up questions to the AI based on the last generated report.
+    """
+    user_question = request.form.get('question')
+
+    if not user_question:
+        app.logger.warning(f"Empty follow-up question from admin '{session['username']}'.")
+        return jsonify({'status': 'error', 'message': 'Please enter a question.'}), 400
+
+    last_ai_analysis_query_raw = session.get('last_ai_analysis_query')
+    last_report_summary = session.get('last_report_summary')
+
+    if not last_ai_analysis_query_raw or not last_report_summary:
+        app.logger.warning(f"No previous AI analysis context found for admin '{session['username']}'.")
+        return jsonify({'status': 'error', 'message': 'No previous report analysis found. Please generate a report analysis first.'}), 400
+
+    # Re-create datetime objects from ISO strings for MongoDB query
+    last_ai_analysis_query = last_ai_analysis_query_raw.copy()
+    if 'date' in last_ai_analysis_query and isinstance(last_ai_analysis_query['date'], dict):
+        if '$gte' in last_ai_analysis_query['date']:
+            last_ai_analysis_query['date']['$gte'] = datetime.fromisoformat(last_ai_analysis_query['date']['$gte'])
+        if '$lt' in last_ai_analysis_query['date']:
+            last_ai_analysis_query['date']['$lt'] = datetime.fromisoformat(last_ai_analysis_query['date']['$lt'])
+
+    app.logger.info(f"Admin '{session['username']}' asking follow-up question: '{user_question}' based on query: {last_ai_analysis_query}.")
+
+    try:
+        # Re-fetch records using the stored query
+        records = list(loom_collection.find(last_ai_analysis_query, {"_id": 0}))
+
+        if not records:
+            return jsonify({'status': 'info', 'message': 'No data found for the original criteria to answer the question.'}), 200
+
+        # Prepare detailed records for AI, again respecting the limit
+        detailed_records_for_ai = []
+        for i, record in enumerate(records):
+            if i >= MAX_DETAILED_RECORDS_FOR_AI:
+                break
+            processed_record = convert_datetimes_to_iso(record.copy())
+            detailed_records_for_ai.append(processed_record)
+
+        # Construct the follow-up prompt
+        follow_up_prompt_text = f"""
+        Here is a summary and sample data from a powerloom production report you previously analyzed:
+
+        Overall Summary:
+        {json.dumps(last_report_summary, indent=2)}
+
+        Sample Detailed Records (up to {MAX_DETAILED_RECORDS_FOR_AI} records):
+        {json.dumps(detailed_records_for_ai, indent=2)}
+
+        Based on this information and your previous analysis, please answer the following question:
+        "{user_question}"
+        """
+
+        app.logger.debug(f"Sending follow-up prompt to AI:\n{follow_up_prompt_text[:500]}...")
+
+        # Call Gemini API
+        api_key = "AIzaSyDABptEJ0hUgQMNHep7cAaLKADJXP8AL0w" 
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        
+        payload = {
+            "contents": [{"role": "user", "parts": [{"text": follow_up_prompt_text}]}]
+        }
+
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(api_url, headers=headers, json=payload)
+        response.raise_for_status() 
+        
+        ai_result = response.json()
+
+        if ai_result.get('candidates') and ai_result['candidates'][0].get('content') and ai_result['candidates'][0]['content'].get('parts'): 
+            ai_answer = ai_result['candidates'][0]['content']['parts'][0]['text']
+            app.logger.info(f"AI successfully answered follow-up question for admin '{session['username']}'.")
+            return jsonify({
+                'status': 'success',
+                'ai_answer': ai_answer,
+                'message': 'AI answered successfully.'
+            }), 200
+        else:
+            app.logger.error(f"AI response structure unexpected or missing content for follow-up: {ai_result}")
+            return jsonify({'status': 'error', 'message': 'Failed to get AI answer: Unexpected AI response format.'}), 500
+
+    except requests.exceptions.RequestException as req_e:
+        app.logger.error(f"HTTP request to AI API failed for follow-up question from admin '{session['username']}': {str(req_e)}", exc_info=True)
+        return jsonify({'status': 'error', 'message': f'Failed to get AI answer: Network or API error. Details: {str(req_e)}'}), 500
+    except Exception as e:
+        app.logger.error(f"Failed to answer follow-up question for admin '{session['username']}': {str(e)}", exc_info=True)
+        return jsonify({'status': 'error', 'message': 'Failed to get AI answer due to an internal server error.'}), 500
+
 
 @app.route("/admin/suggest_loomer_name", methods=["POST"])
 @login_required
@@ -1037,7 +1142,6 @@ def suggest_loomer_name():
             }
         }
 
-        import requests
         headers = {'Content-Type': 'application/json'}
         response = requests.post(api_url, headers=headers, json=payload)
         response.raise_for_status() 
@@ -1095,7 +1199,7 @@ def update_warp(client, db, loom_collection, users_collection, warp_data_collect
 
     try:
         # Atomically update the total_warp
-        # Use upsert=True to create the document if it doesn't exist
+        # Use upsert=True to create the document if it's not exist
         result = warp_data_collection.find_one_and_update(
             {"_id": "current_warp"},
             {"$inc": {"total_warp": value_change}},
@@ -1500,7 +1604,6 @@ def handle_disconnect():
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))  # Render sets PORT env variable
-    socketio.run(app, host='0.0.0.0', port=port)
     # Initial check for admin user. If no users exist, create a default admin.
     client, db, loom_collection, users_collection, warp_data_collection, warp_history_collection = get_db_connection()
     if client and users_collection is not None: 
@@ -1530,4 +1633,4 @@ if __name__ == '__main__':
     # Run the app with SocketIO
     # Use host='0.0.0.0' for external access (e.g., in a Docker container or cloud deployment)
     # Use allow_unsafe_werkzeug=True for development only, not production
-    socketio.run(app, debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 8080)), allow_unsafe_werkzeug=True)
+    socketio.run(app, debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 8080)), allow_unsafe_werkzeug=True)   
