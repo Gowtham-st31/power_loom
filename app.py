@@ -1132,7 +1132,7 @@ def suggest_loomer_name():
     prompt_text = "Suggest a single, common, and appropriate name for a person who operates a powerloom machine. The name should be short and suitable for a username."
 
     try:
-        api_key = "" 
+        api_key = "AIzaSyDABptEJ0hUgQMNHep7cAaLKADJXP8AL0w" 
         api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
         
         payload = {
