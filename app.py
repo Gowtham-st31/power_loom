@@ -971,6 +971,8 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
 
 
         prompt_text = f"""
+        1.Total loom count in given data
+        2.In given data either morning or night shift or both shift . Check per shift it should contain loom number 1 to 24
         Analyze the following powerloom production data and provide insights, trends, and potential areas for improvement.
         
         Overall Summary:
