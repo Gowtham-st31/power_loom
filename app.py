@@ -1057,7 +1057,7 @@ def ask_ai_question(client, db, loom_collection, users_collection, warp_data_col
 
     try:
         # Re-fetch records using the stored query
-        records = list(loom_collection.find(last_ai_analysis_query, {"_id": 0}))
+        records = list(loom_collection.find({}, {"_id": 0}))
 
         if not records:
             return jsonify({'status': 'info', 'message': 'No data found for the original criteria to answer the question.'}), 200
