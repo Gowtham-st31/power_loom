@@ -965,12 +965,10 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
 
         # Limit detailed records sent to AI for the initial prompt to avoid exceeding context window
         detailed_records_for_ai = []
-        for i, record in enumerate(records):
-            if i >= MAX_DETAILED_RECORDS_FOR_AI: # Use the configurable limit
-                break
-            # Apply the convert_datetimes_to_iso helper function to each record copy
+        for record in records:
             processed_record = convert_datetimes_to_iso(record.copy())
             detailed_records_for_ai.append(processed_record)
+
 
         prompt_text = f"""
         Analyze the following powerloom production data and provide insights, trends, and potential areas for improvement.
