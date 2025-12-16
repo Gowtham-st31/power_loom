@@ -1,12 +1,25 @@
 <!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"><title>Meter Report</title></head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Meter Report</title>
+
+    <style>
+        /* Unicode font that supports ₹ */
+        body {
+            font-family: "DejaVu Sans", "Noto Sans", Arial, sans-serif;
+        }
+    </style>
+</head>
 <body>
     <h2>Meter Report</h2>
-    <p>Loomer: {{ loomer }}</p>
-    <p>Shift: {{ shift }}</p>
-    <p>From: {{ from_date }}</p>
-    <p>To: {{ to_date }}</p>
-    <p>Total Meters: <strong>{{ total }}</strong></p>
+
+    <p><strong>Loomer:</strong> {{ loomer }}</p>
+    <p><strong>Shift:</strong> {{ shift }}</p>
+    <p><strong>From:</strong> {{ from_date }}</p>
+    <p><strong>To:</strong> {{ to_date }}</p>
+
+    <p><strong>Total Meters:</strong> {{ total }}</p>
+    <p><strong>Total Salary:</strong> ₹{{ total_salary }}</p>
 </body>
 </html>
