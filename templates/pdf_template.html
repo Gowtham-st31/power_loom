@@ -3,22 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <title>Meter Report</title>
-
     <style>
-        /* Unicode font that supports ₹ */
         body {
             font-family: "DejaVu Sans", "Noto Sans", Arial, sans-serif;
+        }
+
+        @font-face {
+            font-family: "DejaVu Sans";
+            src: url("/static/fonts/DejaVuSans.ttf") format("truetype");
         }
     </style>
 </head>
 <body>
     <h2>Meter Report</h2>
-
     <p><strong>Loomer:</strong> {{ loomer }}</p>
     <p><strong>Shift:</strong> {{ shift }}</p>
     <p><strong>From:</strong> {{ from_date }}</p>
     <p><strong>To:</strong> {{ to_date }}</p>
-
     <p><strong>Total Meters:</strong> {{ total }}</p>
     <p><strong>Total Salary:</strong> ₹{{ total_salary }}</p>
 </body>
