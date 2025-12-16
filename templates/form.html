@@ -1607,7 +1607,7 @@
                     `Total Meters`,
                     `Total Salary`
                 ];
-                const subtotalRows = loomSubtotalsData.map(s => [s.loom_number, s.total_meters, `₹${s.total_salary}`]);
+                const subtotalRows = loomSubtotalsData.map(s => [s.loom_number, s.total_meters, `Rs. ${s.total_salary}`]);
 
                 doc.autoTable({
                     head: [subtotalHeaders],
@@ -1648,7 +1648,7 @@
                     `Total Meters`,
                     `Total Salary`
                 ];
-                const dailySubtotalRows = dailySubtotalsData.map(s => [s.date, s.total_meters, `₹${s.total_salary}`]);
+                const dailySubtotalRows = dailySubtotalsData.map(s => [s.date, s.total_meters, `Rs. ${s.total_salary}`]);
 
                 doc.autoTable({
                     head: [dailySubtotalHeaders],
