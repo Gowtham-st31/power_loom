@@ -8,7 +8,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from bson.objectid import ObjectId # Import ObjectId for MongoDB
 import logging
-
+from weasyprint import HTML
+from flask import make_response
 # Import SocketIO
 from flask_socketio import SocketIO, emit
 
@@ -180,6 +181,25 @@ def authenticate(client, db, loom_collection, users_collection, warp_data_collec
     else:
         app.logger.warning(f"User '{username_input}' (normalized to '{username_for_db}') not found in database.")
         return jsonify({'status': 'error', 'message': 'Invalid username or password.'}), 401
+@app.route("/download_report_pdf")
+@login_required
+def download_report_pdf():
+    html = render_template(
+        "meter_report.html",
+        loomer=loomer,
+        shift=shift,
+        from_date=from_date,
+        to_date=to_date,
+        total=total_meters,
+        total_salary=total_salary
+    )
+
+    pdf = HTML(string=html, base_url=request.root_url).write_pdf()
+
+    response = make_response(pdf)
+    response.headers["Content-Type"] = "application/pdf"
+    response.headers["Content-Disposition"] = "inline; filename=report.pdf"
+    return response
 
 @app.route("/logout", methods=["POST"])
 @login_required
