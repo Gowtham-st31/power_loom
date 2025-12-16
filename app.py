@@ -185,7 +185,7 @@ def authenticate(client, db, loom_collection, users_collection, warp_data_collec
 @login_required
 def download_report_pdf():
     html = render_template(
-        "meter_report.html",
+        "pdf_template.html",
         loomer=loomer,
         shift=shift,
         from_date=from_date,
