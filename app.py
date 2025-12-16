@@ -991,8 +991,8 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
         app.logger.debug(f"Sending prompt to AI:\n{prompt_text[:999999999999999]}...") # Log first 500 chars
 
         # Call Gemini API
-        api_key = "AIzaSyDN3GG-bCw7-jD9Maf-4zXFR8C7mMA2Xj0" 
-        api_url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+        api_key = "AIzaSyDgPfaR6sjs4L2I34n5NVnyhZvYcFPxohY" 
+        api_url = api_url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
         
         payload = {
             "contents": [{"role": "user", "parts": [{"text": prompt_text}]}]
