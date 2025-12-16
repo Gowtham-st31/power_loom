@@ -992,18 +992,26 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
 
         # Call Gemini API
         api_key = "AIzaSyDgPfaR6sjs4L2I34n5NVnyhZvYcFPxohY" 
-        api_url = api_url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
+        api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+        
+        headers = {
+            "Content-Type": "application/json",
+            "X-goog-api-key": api_key
+        }
         
         payload = {
-            "contents": [{"role": "user", "parts": [{"text": prompt_text}]}]
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": prompt_text}]
+                }
+            ]
         }
-
-        headers = {'Content-Type': 'application/json'}
+        
         response = requests.post(api_url, headers=headers, json=payload)
-        response.raise_for_status() 
-        
+        response.raise_for_status()
+
         ai_result = response.json()
-        
         if ai_result.get('candidates') and ai_result['candidates'][0].get('content') and ai_result['candidates'][0]['content'].get('parts'): 
             ai_analysis = ai_result['candidates'][0]['content']['parts'][0]['text']
             app.logger.info(f"AI analysis successfully generated for admin '{session['username']}'.")
