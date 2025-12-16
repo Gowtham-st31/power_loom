@@ -5,22 +5,19 @@
     <title>Meter Report</title>
     <style>
         body {
-            font-family: "DejaVu Sans", "Noto Sans", Arial, sans-serif;
-        }
-
-        @font-face {
-            font-family: "DejaVu Sans";
-            src: url("/static/fonts/DejaVuSans.ttf") format("truetype");
+            font-family: Arial, sans-serif;
         }
     </style>
 </head>
 <body>
     <h2>Meter Report</h2>
-    <p><strong>Loomer:</strong> {{ loomer }}</p>
-    <p><strong>Shift:</strong> {{ shift }}</p>
-    <p><strong>From:</strong> {{ from_date }}</p>
-    <p><strong>To:</strong> {{ to_date }}</p>
-    <p><strong>Total Meters:</strong> {{ total }}</p>
-    <p><strong>Total Salary:</strong> ₹{{ total_salary }}</p>
+
+    <p><b>Loomer:</b> {{ loomer }}</p>
+    <p><b>Shift:</b> {{ shift }}</p>
+    <p><b>From:</b> {{ from_date }}</p>
+    <p><b>To:</b> {{ to_date }}</p>
+
+    <p><b>Total Meters:</b> {{ total }}</p>
+    <p><b>Total Salary:</b> ₹{{ total_salary }}</p>
 </body>
 </html>
