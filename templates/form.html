@@ -1584,9 +1584,9 @@
                         const numericValue = parseFloat(value.replace(/[^0-9.]/g, '')); 
                         
                         if (!isNaN(numericValue)) {
-                            data.cell.text = [`₹${numericValue.toFixed(2)}`]; 
+                            data.cell.text = [`Rs. ${numericValue.toFixed(2)}`]; 
                         } else {
-                            data.cell.text = ['₹0.00']; 
+                            data.cell.text = ['Rs. 0.00']; 
                         }
                     }
                 },
