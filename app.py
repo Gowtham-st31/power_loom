@@ -19,6 +19,11 @@ import requests
 # Configure logging to show debug messages
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
+MONGO_URI = os.getenv("MONGO_URI")
+
+if not MONGO_URI:
+    raise RuntimeError("MONGO_URI is not set")
+
 app = Flask(__name__)
 
 # IMPORTANT FOR DEPLOYMENT:
