@@ -57,33 +57,53 @@ IST = pytz.timezone('Asia/Kolkata')
 MAX_DETAILED_RECORDS_FOR_AI = 999999999999999999999999999999999999999
 
 
+from pymongo import MongoClient
+
 def get_db_connection():
     """Establish and return MongoDB connection, along with collections."""
     client = None
     try:
-        app.logger.debug(f"Attempting MongoDB connection with URI (first 30 chars): {MONGO_URI[:30]}...")
-        client = MongoClient(MONGO_URI)
+        if not MONGO_URI:
+            raise RuntimeError("MONGO_URI is not set")
+
+        app.logger.debug(
+            f"Attempting MongoDB connection (first 30 chars): {MONGO_URI[:30]}..."
+        )
+
+        client = MongoClient(
+            MONGO_URI,
+            serverSelectionTimeoutMS=5000,   # 5 sec timeout
+            connectTimeoutMS=5000
+        )
+
+        # ✅ Modern & reliable health check
+        client.admin.command("ping")
+
         db = client[DB_NAME]
         loom_collection = db[LOOM_DATA_COLLECTION]
         users_collection = db[USERS_COLLECTION]
-        warp_data_collection = db[WARP_DATA_COLLECTION] # New collection
-        warp_history_collection = db[WARP_HISTORY_COLLECTION] # New collection
-        
-        # Test the connection by sending a command to the database
-        # This command will raise an exception if connection fails or primary is not found
-        ismaster_result = client.admin.command('ismaster')
-        if not ismaster_result.get('ismaster'):
-            raise Exception("MongoDB ismaster command failed: Not connected to a primary.")
-        
-        app.logger.info(f"Successfully established MongoDB connection to DB '{DB_NAME}'.")
-        app.logger.debug(f"Collections: Loom='{LOOM_DATA_COLLECTION}', Users='{USERS_COLLECTION}', WarpData='{WARP_DATA_COLLECTION}', WarpHistory='{WARP_HISTORY_COLLECTION}'")
-        return client, db, loom_collection, users_collection, warp_data_collection, warp_history_collection
+        warp_data_collection = db[WARP_DATA_COLLECTION]
+        warp_history_collection = db[WARP_HISTORY_COLLECTION]
+
+        app.logger.info(f"MongoDB connected successfully to DB '{DB_NAME}'")
+        return (
+            client,
+            db,
+            loom_collection,
+            users_collection,
+            warp_data_collection,
+            warp_history_collection
+        )
+
     except Exception as e:
-        app.logger.error(f"MongoDB connection error during get_db_connection: {str(e)}", exc_info=True)
+        app.logger.error(
+            f"MongoDB connection error in get_db_connection: {e}",
+            exc_info=True
+        )
         if client:
             client.close()
-        # Return None for all collections and client to signal failure
         return None, None, None, None, None, None
+
 
 def handle_db_errors(f):
     """Decorator to handle database errors and ensure client closure."""
