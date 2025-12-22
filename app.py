@@ -35,7 +35,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # MongoDB Configuration
 # These are loaded from environment variables. Provide sensible defaults for local development.
 # Render will inject these environment variables when deployed.
-MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://gowthamst31:gowtham123@powerloom-cluster.gfl74dq.mongodb.net/?retryWrites=true&w=majority&appName=powerloom-cluster")
+
 DB_NAME = os.getenv("DB_NAME", "powerloom")
 LOOM_DATA_COLLECTION = os.getenv("LOOM_DATA_COLLECTION", "loom_data")
 USERS_COLLECTION = os.getenv("USERS_COLLECTION", "users")
