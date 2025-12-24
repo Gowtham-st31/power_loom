@@ -27,7 +27,7 @@ import requests
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://gowthamst31:gowtham123@powerloom-cluster.gfl74dq.mongodb.net/?retryWrites=true&w=majority&appName=powerloom-cluster")
+MONGO_URI = os.getenv("MONGO_URI")
 
 if not MONGO_URI:
     raise RuntimeError("MONGO_URI is not set")
