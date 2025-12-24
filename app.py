@@ -8,6 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from bson.objectid import ObjectId # Import ObjectId for MongoDB
 import logging
+<<<<<<< HEAD
 try:
     from weasyprint import HTML
 except Exception as e:
@@ -16,6 +17,9 @@ except Exception as e:
         "WeasyPrint not available: %s. PDF generation disabled until system libraries (Cairo/Pango/GObject) are installed.",
         e,
     )
+=======
+from weasyprint import HTML
+>>>>>>> bf4ed467c7fe1cc5e69fe7cd9e4fe588ccbd6353
 from flask import make_response
 # Import SocketIO
 from flask_socketio import SocketIO, emit
@@ -26,8 +30,12 @@ import requests
 # Configure logging to show debug messages
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
+<<<<<<< HEAD
 
 MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://gowthamst31:gowtham123@powerloom-cluster.gfl74dq.mongodb.net/?retryWrites=true&w=majority&appName=powerloom-cluster")
+=======
+MONGO_URI = os.getenv("MONGO_URI")
+>>>>>>> bf4ed467c7fe1cc5e69fe7cd9e4fe588ccbd6353
 
 if not MONGO_URI:
     raise RuntimeError("MONGO_URI is not set")
@@ -455,6 +463,7 @@ def authenticate(client, db, loom_collection, users_collection, warp_data_collec
 @app.route("/download_report_pdf")
 @login_required
 def download_report_pdf():
+<<<<<<< HEAD
     if HTML is None:
         return jsonify({
             'status': 'error',
@@ -468,6 +477,8 @@ def download_report_pdf():
     total_meters = request.args.get('total_meters') or request.args.get('total') or ''
     total_salary = request.args.get('total_salary', '')
 
+=======
+>>>>>>> bf4ed467c7fe1cc5e69fe7cd9e4fe588ccbd6353
     html = render_template(
         "pdf_template.html",
         loomer=loomer,
@@ -1945,4 +1956,8 @@ if __name__ == '__main__':
     # Run the app with SocketIO
     # Use host='0.0.0.0' for external access (e.g., in a Docker container or cloud deployment)
     # Use allow_unsafe_werkzeug=True for development only, not production
+<<<<<<< HEAD
     socketio.run(app, debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 8080)))   
+=======
+    socketio.run(app, debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 8080)), allow_unsafe_werkzeug=True)   
+>>>>>>> bf4ed467c7fe1cc5e69fe7cd9e4fe588ccbd6353
