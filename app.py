@@ -1,6 +1,6 @@
 import os
 import json
-from datetime import datetime, timedelta, UTC # Import UTC for timezone-aware datetimes
+from datetime import datetime, timedelta, timezone # Import UTC for timezone-aware datetimes
 import pytz
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 from pymongo import MongoClient
@@ -8,12 +8,29 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from bson.objectid import ObjectId # Import ObjectId for MongoDB
 import logging
-
+try:
+    from weasyprint import HTML
+except Exception as e:
+    HTML = None
+    logging.warning(
+        "WeasyPrint not available: %s. PDF generation disabled until system libraries (Cairo/Pango/GObject) are installed.",
+        e,
+    )
+from flask import make_response
 # Import SocketIO
 from flask_socketio import SocketIO, emit
 
+# Import requests at the top level to ensure it's always available for AI API calls
+import requests 
+
 # Configure logging to show debug messages
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+
+MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://gowthamst31:gowtham123@powerloom-cluster.gfl74dq.mongodb.net/?retryWrites=true&w=majority&appName=powerloom-cluster")
+
+if not MONGO_URI:
+    raise RuntimeError("MONGO_URI is not set")
 
 app = Flask(__name__)
 
@@ -24,6 +41,18 @@ app = Flask(__name__)
 # 2. For local development, os.urandom(24) generates a good random key.
 app.secret_key = os.getenv("FLASK_SECRET_KEY", os.urandom(24))
 
+
+def _require_login_page():
+    if 'logged_in' not in session or not session.get('logged_in'):
+        return redirect(url_for('login_page'))
+    return None
+
+
+def _require_admin_page():
+    if session.get('role') != 'admin':
+        return redirect(url_for('index'))
+    return None
+
 # Initialize SocketIO
 # cors_allowed_origins="*" allows connections from any origin. Adjust for production security.
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -31,7 +60,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # MongoDB Configuration
 # These are loaded from environment variables. Provide sensible defaults for local development.
 # Render will inject these environment variables when deployed.
-MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://gowthamst31:gowtham123@powerloom-cluster.gfl74dq.mongodb.net/?retryWrites=true&w=majority&appName=powerloom-cluster")
+
 DB_NAME = os.getenv("DB_NAME", "powerloom")
 LOOM_DATA_COLLECTION = os.getenv("LOOM_DATA_COLLECTION", "loom_data")
 USERS_COLLECTION = os.getenv("USERS_COLLECTION", "users")
@@ -43,39 +72,58 @@ WARP_HISTORY_COLLECTION = os.getenv("WARP_HISTORY_COLLECTION", "warp_history")
 # Timezone Configuration for Indian Standard Time (IST)
 IST = pytz.timezone('Asia/Kolkata')
 
-# [CODE CONTINUES — this is just a partial paste due to size constraints. The rest is already loaded from your file.]
+# Configure the maximum number of detailed records to send to AI for analysis
+# Be cautious when increasing this value, as it can lead to exceeding the AI model's context window
+MAX_DETAILED_RECORDS_FOR_AI = 999999999999999999999999999999999999999
 
-# The full `app.py` from your uploaded file has already been indexed.
-# If you need specific sections extracted, summarized, or modified, let me know!
 
+from pymongo import MongoClient
 
 def get_db_connection():
     """Establish and return MongoDB connection, along with collections."""
     client = None
     try:
-        app.logger.debug(f"Attempting MongoDB connection with URI (first 30 chars): {MONGO_URI[:30]}...")
-        client = MongoClient(MONGO_URI)
+        if not MONGO_URI:
+            raise RuntimeError("MONGO_URI is not set")
+
+        app.logger.debug(
+            f"Attempting MongoDB connection (first 30 chars): {MONGO_URI[:30]}..."
+        )
+
+        client = MongoClient(
+            MONGO_URI,
+            serverSelectionTimeoutMS=5000,   # 5 sec timeout
+            connectTimeoutMS=5000
+        )
+
+        # ✅ Modern & reliable health check
+        client.admin.command("ping")
+
         db = client[DB_NAME]
         loom_collection = db[LOOM_DATA_COLLECTION]
         users_collection = db[USERS_COLLECTION]
-        warp_data_collection = db[WARP_DATA_COLLECTION] # New collection
-        warp_history_collection = db[WARP_HISTORY_COLLECTION] # New collection
-        
-        # Test the connection by sending a command to the database
-        # This command will raise an exception if connection fails or primary is not found
-        ismaster_result = client.admin.command('ismaster')
-        if not ismaster_result.get('ismaster'):
-            raise Exception("MongoDB ismaster command failed: Not connected to a primary.")
-        
-        app.logger.info(f"Successfully established MongoDB connection to DB '{DB_NAME}'.")
-        app.logger.debug(f"Collections: Loom='{LOOM_DATA_COLLECTION}', Users='{USERS_COLLECTION}', WarpData='{WARP_DATA_COLLECTION}', WarpHistory='{WARP_HISTORY_COLLECTION}'")
-        return client, db, loom_collection, users_collection, warp_data_collection, warp_history_collection
+        warp_data_collection = db[WARP_DATA_COLLECTION]
+        warp_history_collection = db[WARP_HISTORY_COLLECTION]
+
+        app.logger.info(f"MongoDB connected successfully to DB '{DB_NAME}'")
+        return (
+            client,
+            db,
+            loom_collection,
+            users_collection,
+            warp_data_collection,
+            warp_history_collection
+        )
+
     except Exception as e:
-        app.logger.error(f"MongoDB connection error during get_db_connection: {str(e)}", exc_info=True)
+        app.logger.error(
+            f"MongoDB connection error in get_db_connection: {e}",
+            exc_info=True
+        )
         if client:
             client.close()
-        # Return None for all collections and client to signal failure
         return None, None, None, None, None, None
+
 
 def handle_db_errors(f):
     """Decorator to handle database errors and ensure client closure."""
@@ -139,6 +187,232 @@ def index():
         return render_template("form.html", username=session.get('username'), role=session.get('role'))
     return redirect(url_for('login_page'))
 
+
+# --- Page Routes (UI navigation as separate pages) ---
+
+
+@app.route("/enter-data", methods=["GET"])
+def enter_data_page():
+    gate = _require_login_page()
+    if gate:
+        return gate
+    return render_template(
+        "form.html",
+        username=session.get('username'),
+        role=session.get('role'),
+        initial_section="dataEntrySection",
+    )
+
+
+@app.route("/reports", methods=["GET"])
+def reports_page():
+    gate = _require_login_page()
+    if gate:
+        return gate
+    return render_template(
+        "form.html",
+        username=session.get('username'),
+        role=session.get('role'),
+        initial_section="reportSection",
+    )
+
+
+@app.route("/graphs", methods=["GET"])
+def graphs_page():
+    gate = _require_login_page()
+    if gate:
+        return gate
+    return render_template(
+        "form.html",
+        username=session.get('username'),
+        role=session.get('role'),
+        initial_section="graphsSection",
+    )
+
+
+@app.route("/admin", methods=["GET"])
+def admin_tools_page():
+    gate = _require_login_page()
+    if gate:
+        return gate
+    gate = _require_admin_page()
+    if gate:
+        return gate
+    return render_template(
+        "form.html",
+        username=session.get('username'),
+        role=session.get('role'),
+        initial_section="adminSection",
+        initial_admin_tab="addUser",
+    )
+
+
+@app.route("/admin/tools/add-user", methods=["GET"])
+def admin_tools_add_user_page():
+    gate = _require_login_page()
+    if gate:
+        return gate
+    gate = _require_admin_page()
+    if gate:
+        return gate
+    return render_template(
+        "form.html",
+        username=session.get('username'),
+        role=session.get('role'),
+        initial_section="adminSection",
+        initial_admin_tab="addUser",
+    )
+
+
+@app.route("/admin/tools/update-password", methods=["GET"])
+def admin_tools_update_password_page():
+    gate = _require_login_page()
+    if gate:
+        return gate
+    gate = _require_admin_page()
+    if gate:
+        return gate
+    return render_template(
+        "form.html",
+        username=session.get('username'),
+        role=session.get('role'),
+        initial_section="adminSection",
+        initial_admin_tab="updatePassword",
+    )
+
+
+@app.route("/admin/tools/remove-user", methods=["GET"])
+def admin_tools_remove_user_page():
+    gate = _require_login_page()
+    if gate:
+        return gate
+    gate = _require_admin_page()
+    if gate:
+        return gate
+    return render_template(
+        "form.html",
+        username=session.get('username'),
+        role=session.get('role'),
+        initial_section="adminSection",
+        initial_admin_tab="removeUser",
+    )
+
+
+@app.route("/admin/tools/remove-data", methods=["GET"])
+def admin_tools_remove_data_page():
+    gate = _require_login_page()
+    if gate:
+        return gate
+    gate = _require_admin_page()
+    if gate:
+        return gate
+    return render_template(
+        "form.html",
+        username=session.get('username'),
+        role=session.get('role'),
+        initial_section="adminSection",
+        initial_admin_tab="removeLoomData",
+    )
+
+
+@app.route("/admin/tools/list-users", methods=["GET"])
+def admin_tools_list_users_page():
+    gate = _require_login_page()
+    if gate:
+        return gate
+    gate = _require_admin_page()
+    if gate:
+        return gate
+    return render_template(
+        "form.html",
+        username=session.get('username'),
+        role=session.get('role'),
+        initial_section="adminSection",
+        initial_admin_tab="listUsers",
+    )
+
+
+@app.route("/admin/tools/warp-management", methods=["GET"])
+def admin_tools_warp_management_page():
+    gate = _require_login_page()
+    if gate:
+        return gate
+    gate = _require_admin_page()
+    if gate:
+        return gate
+    return render_template(
+        "form.html",
+        username=session.get('username'),
+        role=session.get('role'),
+        initial_section="adminSection",
+        initial_admin_tab="warpManagement",
+    )
+
+
+@app.route("/profile", methods=["GET"])
+def profile_page():
+    gate = _require_login_page()
+    if gate:
+        return gate
+    return render_template(
+        "form.html",
+        username=session.get('username'),
+        role=session.get('role'),
+        initial_section="profileSection",
+    )
+
+
+@app.route("/profile/summary", methods=["GET"])
+@login_required
+@handle_db_errors
+def profile_summary(client, db, loom_collection, users_collection, warp_data_collection, warp_history_collection):
+    """Returns lifetime totals for the current user; admin gets overall totals."""
+    username = (session.get('username') or '').strip().lower()
+    role = session.get('role')
+
+    user_doc = users_collection.find_one({"username": username}, {"password_hash": 0}) if username else None
+
+    match_stage = None
+    if role != 'admin':
+        match_stage = {"$match": {"loomer_name": username}}
+
+    pipeline = []
+    if match_stage:
+        pipeline.append(match_stage)
+    pipeline.append({
+        "$group": {
+            "_id": None,
+            "total_records": {"$sum": 1},
+            "total_meters": {"$sum": "$meters"},
+            "total_salary": {"$sum": {"$multiply": ["$meters", "$salary_per_meter"]}},
+        }
+    })
+
+    agg = list(loom_collection.aggregate(pipeline))
+    totals = agg[0] if agg else {"total_records": 0, "total_meters": 0, "total_salary": 0}
+
+    created_at = None
+    if user_doc and user_doc.get('created_at'):
+        try:
+            created_at = user_doc['created_at'].isoformat()
+        except Exception:
+            created_at = str(user_doc.get('created_at'))
+
+    return jsonify({
+        "status": "success",
+        "user": {
+            "username": username,
+            "role": role,
+            "created_at": created_at,
+        },
+        "totals": {
+            "scope": "all" if role == 'admin' else "self",
+            "total_records": int(totals.get('total_records') or 0),
+            "total_meters": float(totals.get('total_meters') or 0),
+            "total_salary": float(totals.get('total_salary') or 0),
+        }
+    }), 200
+
 @app.route("/login")
 def login_page():
     """Renders the login HTML page."""
@@ -178,6 +452,38 @@ def authenticate(client, db, loom_collection, users_collection, warp_data_collec
     else:
         app.logger.warning(f"User '{username_input}' (normalized to '{username_for_db}') not found in database.")
         return jsonify({'status': 'error', 'message': 'Invalid username or password.'}), 401
+@app.route("/download_report_pdf")
+@login_required
+def download_report_pdf():
+    if HTML is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'PDF generation is not available on this system. Install WeasyPrint runtime (Cairo/Pango/GObject) to enable.'
+        }), 503
+
+    loomer = request.args.get('loomer', '')
+    shift = request.args.get('shift', '')
+    from_date = request.args.get('from_date', '')
+    to_date = request.args.get('to_date', '')
+    total_meters = request.args.get('total_meters') or request.args.get('total') or ''
+    total_salary = request.args.get('total_salary', '')
+
+    html = render_template(
+        "pdf_template.html",
+        loomer=loomer,
+        shift=shift,
+        from_date=from_date,
+        to_date=to_date,
+        total=total_meters,
+        total_salary=total_salary
+    )
+
+    pdf = HTML(string=html, base_url=request.root_url).write_pdf()
+
+    response = make_response(pdf)
+    response.headers["Content-Type"] = "application/pdf"
+    response.headers["Content-Disposition"] = "inline; filename=report.pdf"
+    return response
 
 @app.route("/logout", methods=["POST"])
 @login_required
@@ -220,7 +526,7 @@ def add_user(client, db, loom_collection, users_collection, warp_data_collection
             "username": username,
             "password_hash": hashed_password,
             "role": role,
-            "created_at": datetime.now(UTC) # Ensured timezone-aware UTC
+            "created_at": datetime.now(timezone.utc) # Ensured timezone-aware UTC
         })
         app.logger.info(f"Admin '{session['username']}' successfully added new user: {username} ({role}).")
         
@@ -412,7 +718,7 @@ def add_form(client, db, loom_collection, users_collection, warp_data_collection
         "meters": meters, 
         "salary_per_meter": salary_per_meter, 
         "date": date_obj_utc, 
-        "created_at": datetime.now(UTC) # Ensured timezone-aware UTC
+        "created_at": datetime.now(timezone.utc) # Ensured timezone-aware UTC
     }
 
     try:
@@ -885,6 +1191,7 @@ def get_graph_data(client, db, loom_collection, users_collection, warp_data_coll
 def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_data_collection, warp_history_collection):
     """
     Analyzes loom production report data using the Gemini AI and returns insights.
+    Stores query and summary in session for follow-up questions.
     """
     data = request.form
     loomer_name_input = data.get('loomer_name', '').strip().lower()
@@ -938,6 +1245,9 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
         total_salary = sum(record.get("meters", 0) * record.get("salary_per_meter", 0.0) for record in records)
 
         if not records:
+            # Clear previous AI analysis session data if no records found
+            session.pop('last_ai_analysis_query', None)
+            session.pop('last_report_summary', None)
             return jsonify({'status': 'info', 'message': 'No data found for the selected criteria to analyze.'}), 200
 
         # Prepare data for AI prompt
@@ -951,24 +1261,28 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
             "loom_number_filter": loom_number_query if loom_number_query else "All Loom Numbers"
         }
         
-        # Limit detailed records sent to AI to avoid exceeding context window
+        # Store query parameters and report summary in session for follow-up questions
+        # Convert datetime objects in query to string for session serialization
+        session['last_ai_analysis_query'] = convert_datetimes_to_iso(query) 
+        session['last_report_summary'] = report_summary
+
+
+        # Limit detailed records sent to AI for the initial prompt to avoid exceeding context window
         detailed_records_for_ai = []
-        for i, record in enumerate(records):
-            if i >= 10: # Send up to 10 detailed records for brevity
-                break
-            # Convert datetime objects to string for JSON serialization
-            record_copy = record.copy()
-            if 'date' in record_copy and isinstance(record_copy['date'], datetime):
-                record_copy['date'] = record_copy['date'].strftime("%Y-%m-%d %H:%M:%S UTC")
-            detailed_records_for_ai.append(record_copy)
+        for record in records:
+            processed_record = convert_datetimes_to_iso(record.copy())
+            detailed_records_for_ai.append(processed_record)
+
 
         prompt_text = f"""
+        1.Total loom count in given data
+        2.In given data either morning or night shift or both shift . Check per shift it should contain loom number 1 to 24
         Analyze the following powerloom production data and provide insights, trends, and potential areas for improvement.
         
         Overall Summary:
         {json.dumps(report_summary, indent=2)}
 
-        Sample Detailed Records (up to 10 records):
+        Sample Detailed Records (up to {MAX_DETAILED_RECORDS_FOR_AI} records):
         {json.dumps(detailed_records_for_ai, indent=2)}
 
         Based on this data, please provide:
@@ -978,25 +1292,31 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
         4.  Potential issues or anomalies.
         """
         
-        app.logger.debug(f"Sending prompt to AI:\n{prompt_text[:500]}...") # Log first 500 chars
+        app.logger.debug(f"Sending prompt to AI:\n{prompt_text[:999999999999999]}...") # Log first 500 chars
 
         # Call Gemini API
-        # The API key is automatically provided by the Canvas environment if left as an empty string.
-        api_key = "" 
-        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+        api_key = "AIzaSyDgPfaR6sjs4L2I34n5NVnyhZvYcFPxohY" 
+        api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+        
+        headers = {
+            "Content-Type": "application/json",
+            "X-goog-api-key": api_key
+        }
         
         payload = {
-            "contents": [{"role": "user", "parts": [{"text": prompt_text}]}]
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": prompt_text}]
+                }
+            ]
         }
-
-        import requests
-        headers = {'Content-Type': 'application/json'}
+        
         response = requests.post(api_url, headers=headers, json=payload)
-        response.raise_for_status() 
-        
+        response.raise_for_status()
+
         ai_result = response.json()
-        
-        if ai_result.get('candidates') and ai_result['candidates'][0].get('content') and ai_result['candidates'][0]['content'].get('parts'):
+        if ai_result.get('candidates') and ai_result['candidates'][0].get('content') and ai_result['candidates'][0]['content'].get('parts'): 
             ai_analysis = ai_result['candidates'][0]['content']['parts'][0]['text']
             app.logger.info(f"AI analysis successfully generated for admin '{session['username']}'.")
             return jsonify({
@@ -1005,15 +1325,112 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
                 'message': 'AI analysis generated successfully.'
             }), 200
         else:
-            app.logger.error(f"AI response structure unexpected or missing content for name suggestion: {ai_result}")
-            return jsonify({'status': 'error', 'message': 'Failed to get AI name suggestion: Unexpected AI response format.'}), 500
+            app.logger.error(f"AI response structure unexpected or missing content for AI analysis: {ai_result}")
+            return jsonify({'status': 'error', 'message': 'Failed to get AI analysis: Unexpected AI response format.'}), 500
 
     except requests.exceptions.RequestException as req_e:
-        app.logger.error(f"HTTP request to AI API failed for name suggestion from admin '{session['username']}': {str(req_e)}", exc_info=True)
-        return jsonify({'status': 'error', 'message': f'Failed to get AI name suggestion: Network or API error. Details: {str(req_e)}'}), 500
+        app.logger.error(f"HTTP request to AI API failed for AI analysis from admin '{session['username']}': {str(req_e)}", exc_info=True)
+        return jsonify({'status': 'error', 'message': f'Failed to get AI analysis: Network or API error. Details: {str(req_e)}'}), 500
     except Exception as e:
-        app.logger.error(f"Failed to perform AI name suggestion for admin '{session['username']}': {str(e)}", exc_info=True)
-        return jsonify({'status': 'error', 'message': 'Failed to get AI name suggestion due to an internal server error.'}), 500
+        app.logger.error(f"Failed to perform AI analysis for admin '{session['username']}': {str(e)}", exc_info=True)
+        return jsonify({'status': 'error', 'message': 'Failed to get AI analysis due to an internal server error.'}), 500
+
+
+@app.route("/analyze_report_with_ai/ask_question", methods=["POST"])
+@login_required
+@admin_required
+@handle_db_errors
+def ask_ai_question(client, db, loom_collection, users_collection, warp_data_collection, warp_history_collection):
+    """
+    Handles follow-up questions to the AI based on the last generated report.
+    """
+    user_question = request.form.get('question')
+
+    if not user_question:
+        app.logger.warning(f"Empty follow-up question from admin '{session['username']}'.")
+        return jsonify({'status': 'error', 'message': 'Please enter a question.'}), 400
+
+    last_ai_analysis_query_raw = session.get('last_ai_analysis_query')
+    last_report_summary = session.get('last_report_summary')
+
+    if not last_ai_analysis_query_raw or not last_report_summary:
+        app.logger.warning(f"No previous AI analysis context found for admin '{session['username']}'.")
+        return jsonify({'status': 'error', 'message': 'No previous report analysis found. Please generate a report analysis first.'}), 400
+
+    # Re-create datetime objects from ISO strings for MongoDB query
+    last_ai_analysis_query = last_ai_analysis_query_raw.copy()
+    if 'date' in last_ai_analysis_query and isinstance(last_ai_analysis_query['date'], dict):
+        if '$gte' in last_ai_analysis_query['date']:
+            last_ai_analysis_query['date']['$gte'] = datetime.fromisoformat(last_ai_analysis_query['date']['$gte'])
+        if '$lt' in last_ai_analysis_query['date']:
+            last_ai_analysis_query['date']['$lt'] = datetime.fromisoformat(last_ai_analysis_query['date']['$lt'])
+
+    app.logger.info(f"Admin '{session['username']}' asking follow-up question: '{user_question}' based on query: {last_ai_analysis_query}.")
+
+    try:
+        # Re-fetch records using the stored query
+        records = list(loom_collection.find({}, {"_id": 0}))
+
+        if not records:
+            return jsonify({'status': 'info', 'message': 'No data found for the original criteria to answer the question.'}), 200
+
+        # Prepare detailed records for AI, again respecting the limit
+        detailed_records_for_ai = []
+        for i, record in enumerate(records):
+            if i >= MAX_DETAILED_RECORDS_FOR_AI:
+                break
+            processed_record = convert_datetimes_to_iso(record.copy())
+            detailed_records_for_ai.append(processed_record)
+
+        # Construct the follow-up prompt
+        follow_up_prompt_text = f"""
+        Here is a summary and sample data from a powerloom production report you previously analyzed:
+
+        Overall Summary:
+        {json.dumps(last_report_summary, indent=2)}
+
+        Sample Detailed Records (up to {MAX_DETAILED_RECORDS_FOR_AI} records):
+        {json.dumps(detailed_records_for_ai, indent=2)}
+
+        Based on this information and your previous analysis, please answer the following question:
+        "{user_question}"
+        """
+
+        app.logger.debug(f"Sending follow-up prompt to AI:\n{follow_up_prompt_text[:500]}...")
+
+        # Call Gemini API
+        api_key = "AIzaSyDABptEJ0hUgQMNHep7cAaLKADJXP8AL0w" 
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        
+        payload = {
+            "contents": [{"role": "user", "parts": [{"text": follow_up_prompt_text}]}]
+        }
+
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(api_url, headers=headers, json=payload)
+        response.raise_for_status() 
+        
+        ai_result = response.json()
+
+        if ai_result.get('candidates') and ai_result['candidates'][0].get('content') and ai_result['candidates'][0]['content'].get('parts'): 
+            ai_answer = ai_result['candidates'][0]['content']['parts'][0]['text']
+            app.logger.info(f"AI successfully answered follow-up question for admin '{session['username']}'.")
+            return jsonify({
+                'status': 'success',
+                'ai_answer': ai_answer,
+                'message': 'AI answered successfully.'
+            }), 200
+        else:
+            app.logger.error(f"AI response structure unexpected or missing content for follow-up: {ai_result}")
+            return jsonify({'status': 'error', 'message': 'Failed to get AI answer: Unexpected AI response format.'}), 500
+
+    except requests.exceptions.RequestException as req_e:
+        app.logger.error(f"HTTP request to AI API failed for follow-up question from admin '{session['username']}': {str(req_e)}", exc_info=True)
+        return jsonify({'status': 'error', 'message': f'Failed to get AI answer: Network or API error. Details: {str(req_e)}'}), 500
+    except Exception as e:
+        app.logger.error(f"Failed to answer follow-up question for admin '{session['username']}': {str(e)}", exc_info=True)
+        return jsonify({'status': 'error', 'message': 'Failed to get AI answer due to an internal server error.'}), 500
+
 
 @app.route("/admin/suggest_loomer_name", methods=["POST"])
 @login_required
@@ -1027,7 +1444,7 @@ def suggest_loomer_name():
     prompt_text = "Suggest a single, common, and appropriate name for a person who operates a powerloom machine. The name should be short and suitable for a username."
 
     try:
-        api_key = "" 
+        api_key = "AIzaSyDABptEJ0hUgQMNHep7cAaLKADJXP8AL0w" 
         api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
         
         payload = {
@@ -1037,7 +1454,6 @@ def suggest_loomer_name():
             }
         }
 
-        import requests
         headers = {'Content-Type': 'application/json'}
         response = requests.post(api_url, headers=headers, json=payload)
         response.raise_for_status() 
@@ -1095,7 +1511,7 @@ def update_warp(client, db, loom_collection, users_collection, warp_data_collect
 
     try:
         # Atomically update the total_warp
-        # Use upsert=True to create the document if it doesn't exist
+        # Use upsert=True to create the document if it's not exist
         result = warp_data_collection.find_one_and_update(
             {"_id": "current_warp"},
             {"$inc": {"total_warp": value_change}},
@@ -1106,14 +1522,14 @@ def update_warp(client, db, loom_collection, users_collection, warp_data_collect
 
         # Log to history
         warp_history_collection.insert_one({
-            "timestamp": datetime.now(UTC), # Ensured timezone-aware UTC
+            "timestamp": datetime.now(timezone.utc), # Ensured timezone-aware UTC
             "user_id": session.get('user_id'),
             "username": session.get('username'),
             "change_type": "Update",
             "value_change": value_change,
             "new_total_warp": new_total_warp,
             "remarks": remarks,
-            "date": datetime.strptime(date_str, '%Y-%m-%d') if date_str else datetime.now(UTC) # Ensured timezone-aware UTC
+            "date": datetime.strptime(date_str, '%Y-%m-%d') if date_str else datetime.now(timezone.utc) # Ensured timezone-aware UTC
         })
         app.logger.info(f"Admin '{session['username']}' updated warp by {value_change}. New total: {new_total_warp}.")
         
@@ -1499,6 +1915,7 @@ def handle_disconnect():
 # You can add more specific SocketIO event handlers if needed for complex real-time interactions
 
 if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))  # Render sets PORT env variable
     # Initial check for admin user. If no users exist, create a default admin.
     client, db, loom_collection, users_collection, warp_data_collection, warp_history_collection = get_db_connection()
     if client and users_collection is not None: 
@@ -1512,7 +1929,7 @@ if __name__ == '__main__':
                 "username": default_admin_username,
                 "password_hash": hashed_password,
                 "role": "admin",
-                "created_at": datetime.now(UTC) # Ensured timezone-aware UTC
+                "created_at": datetime.now(timezone.utc) # Ensured timezone-aware UTC
             })
             app.logger.info(f"Default admin user '{default_admin_username}' created. PLEASE CHANGE THE DEFAULT PASSWORD IN PRODUCTION!")
         
@@ -1528,4 +1945,4 @@ if __name__ == '__main__':
     # Run the app with SocketIO
     # Use host='0.0.0.0' for external access (e.g., in a Docker container or cloud deployment)
     # Use allow_unsafe_werkzeug=True for development only, not production
-    socketio.run(app, debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 8080)), allow_unsafe_werkzeug=True)
+    socketio.run(app, debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 8080)))   

@@ -1,0 +1,557 @@
+/* Two‑Tone Brand Palette (Base + Accent)
+   Default preset: Spotify-style (dark base + green accent)
+   Change only these two values to restyle the full site:
+     --brand-bg, --brand-accent
+*/
+:root {
+    --brand-bg: #0b0b0b;
+    --brand-accent: #1db954;
+
+    /* Derived neutrals (kept consistent, not additional “brand colors”) */
+    --brand-surface: #121212;
+    --brand-surface-2: #181818;
+    --brand-text: #f5f5f5;
+    --brand-muted: #b3b3b3;
+    --brand-border: rgba(255, 255, 255, 0.12);
+    --brand-border-soft: rgba(255, 255, 255, 0.08);
+
+    /* Legacy variables mapped to the accent (keeps existing class hooks working) */
+    --primary-gradient: linear-gradient(135deg, var(--brand-accent) 0%, var(--brand-accent) 100%);
+    --secondary-gradient: linear-gradient(135deg, var(--brand-accent) 0%, var(--brand-accent) 100%);
+    --accent-gradient: linear-gradient(135deg, var(--brand-accent) 0%, var(--brand-accent) 100%);
+    --glass-bg: rgba(18, 18, 18, 0.92);
+    --glass-border: var(--brand-border);
+    --glass-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+    --text-primary: var(--brand-text);
+    --text-secondary: var(--brand-muted);
+}
+
+/* Global Styles */
+body {
+    font-family: 'Inter', sans-serif;
+    /* Two-tone background */
+    background: var(--brand-bg);
+    background-attachment: fixed;
+    background-size: cover;
+    color: var(--text-primary);
+    /* Ensure native form controls (select dropdown menu) use dark UI where supported */
+    color-scheme: dark;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* Enhanced Glassmorphism Card */
+.glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.5), /* Deep shadow for pop */
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    border-radius: 1.5rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+    box-shadow: 
+        0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+        0 10px 10px -5px rgba(0, 0, 0, 0.04),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+
+/* Gradient Text */
+.text-gradient {
+    background: none;
+    -webkit-background-clip: initial;
+    -webkit-text-fill-color: initial;
+    background-clip: initial;
+    color: var(--brand-accent);
+    font-weight: 800;
+}
+
+.text-gradient-secondary {
+    background: none;
+    -webkit-background-clip: initial;
+    -webkit-text-fill-color: initial;
+    background-clip: initial;
+    color: var(--brand-accent);
+    font-weight: 700;
+}
+
+/* Modern Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05); 
+}
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, var(--brand-accent), var(--brand-accent));
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to bottom, var(--brand-accent), var(--brand-accent));
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+/* Animations */
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(29, 185, 84, 0.35); }
+    50% { box-shadow: 0 0 0 10px rgba(29, 185, 84, 0); }
+}
+
+.animate-pulse-glow {
+    animation: pulse-glow 2s infinite;
+}
+
+@keyframes slideInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up {
+    animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Loading Spinner */
+.spinner {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #ffffff;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+}
+
+.btn-secondary .spinner {
+    border-color: rgba(79, 70, 229, 0.2);
+    border-top-color: #4f46e5;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Dark Table Styles */
+.dark-table {
+    background-color: var(--brand-surface);
+    color: var(--brand-text);
+    border: 1px solid var(--brand-border);
+}
+
+.dark-table thead {
+    background-color: var(--brand-bg);
+    color: var(--brand-text);
+}
+
+.dark-table th {
+    color: var(--brand-text) !important;
+    border-bottom: 1px solid var(--brand-border);
+}
+
+.dark-table td {
+    border-bottom: 1px solid var(--brand-border-soft);
+    color: var(--brand-text);
+    opacity: 0.92;
+}
+
+.dark-table tbody tr:hover {
+    background-color: var(--brand-surface-2);
+}
+
+/* Form Elements */
+.modern-input {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--brand-text);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.3s ease;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Select dropdown (including its popup options) readability */
+select.modern-input,
+select.modern-select {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: var(--brand-text);
+}
+
+select.modern-input option,
+select.modern-select option,
+select option {
+    background-color: var(--brand-surface);
+    color: var(--brand-text);
+}
+
+select.modern-input option:disabled,
+select.modern-select option:disabled,
+select option:disabled {
+    color: var(--brand-muted);
+}
+
+.modern-input:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--brand-accent);
+    box-shadow: 0 0 0 4px rgba(29, 185, 84, 0.18);
+    transform: translateY(-1px);
+}
+
+.modern-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+/* Button Styles */
+.btn-primary {
+    background: var(--brand-accent);
+    color: white;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+    border: none;
+}
+
+.btn-primary::before {
+    content: none;
+}
+
+.btn-primary:hover::before {
+    opacity: 0;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* Global focus ring (covers Tailwind focus:ring-* usages too) */
+input:focus,
+select:focus,
+textarea:focus,
+button:focus {
+    outline: none;
+}
+
+/* Make checkbox/radio follow accent color where supported */
+input[type="checkbox"],
+input[type="radio"] {
+    accent-color: var(--brand-accent);
+}
+
+/* Two-tone overrides for Tailwind “accent” colors (keeps layout utilities intact) */
+.text-indigo-300,
+.text-indigo-400,
+.text-indigo-500,
+.text-indigo-600,
+.text-indigo-700,
+.text-indigo-800,
+.text-indigo-900,
+.text-emerald-500,
+.text-emerald-600,
+.text-teal-500,
+.text-teal-600,
+.text-blue-500,
+.text-blue-600,
+.text-purple-500,
+.text-purple-600,
+.text-purple-700 {
+    color: var(--brand-accent) !important;
+}
+
+/* Very light indigo text is commonly used on accent backgrounds; keep it readable */
+.text-indigo-50,
+.text-indigo-100,
+.text-indigo-200 {
+    color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.hover\:text-indigo-600:hover,
+.hover\:text-indigo-800:hover {
+    color: var(--brand-accent) !important;
+}
+
+.bg-indigo-50,
+.bg-indigo-100,
+.bg-indigo-600,
+.bg-indigo-700,
+.bg-purple-600,
+.bg-purple-700,
+.bg-emerald-600,
+.bg-teal-600,
+.bg-blue-600,
+.bg-green-500 {
+    background-color: var(--brand-accent) !important;
+}
+
+.bg-red-500,
+.bg-red-600,
+.bg-red-700,
+.bg-rose-600,
+.bg-rose-800 {
+    background-color: var(--brand-surface) !important;
+    border: 1px solid var(--brand-accent);
+}
+
+.border-indigo-100,
+.border-indigo-400,
+.border-t-indigo-500,
+.focus\:ring-indigo-500,
+.focus\:border-indigo-500 {
+    border-color: var(--brand-accent) !important;
+}
+
+.border-slate-200,
+.border-slate-300,
+.border-white\/20 {
+    border-color: var(--brand-border) !important;
+}
+
+.border-white\/40,
+.border-white\/50,
+.border-white\/60 {
+    border-color: var(--brand-border) !important;
+}
+
+.bg-white,
+.bg-white\/30,
+.bg-white\/50,
+.bg-white\/60,
+.bg-white\/70,
+.bg-white\/80,
+.bg-white\/90,
+.bg-slate-50,
+.focus\:bg-white {
+    background-color: var(--brand-surface) !important;
+}
+
+/* Some components use light overlay helpers like bg-white/20 */
+.bg-white\/20,
+.bg-white\/10 {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.text-gray-900,
+.text-gray-800,
+.text-gray-700,
+.text-gray-600 {
+    color: var(--brand-text) !important;
+}
+
+/* Report/Profile/Admin sections frequently use slate text colors */
+.text-slate-900,
+.text-slate-800,
+.text-slate-700 {
+    color: var(--brand-text) !important;
+}
+
+.text-gray-500,
+.text-slate-500,
+.text-slate-600 {
+    color: var(--brand-muted) !important;
+}
+
+.text-gray-400,
+.text-slate-400,
+.text-slate-300 {
+    color: var(--brand-muted) !important;
+}
+
+/* Common “soft” backgrounds used in report/admin/profile boxes */
+.bg-indigo-50\/30,
+.bg-purple-50\/80,
+.bg-red-50\/80,
+.bg-amber-50\/80,
+.bg-gray-50\/50,
+.bg-gray-50\/80,
+.bg-slate-50\/50,
+.bg-slate-50\/80 {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+.border-slate-100,
+.border-gray-100,
+.border-gray-200,
+.border-gray-300 {
+    border-color: var(--brand-border) !important;
+}
+
+/* Tailwind gradient helpers: force a solid accent instead of multi-color gradients */
+.bg-gradient-to-r,
+.bg-gradient-to-br {
+    background-image: linear-gradient(var(--brand-accent), var(--brand-accent)) !important;
+}
+
+.from-indigo-600,
+.to-purple-600,
+.to-purple-700,
+.to-blue-600,
+.from-red-600,
+.from-red-700,
+.to-rose-600,
+.to-rose-800,
+.from-emerald-600,
+.to-teal-600 {
+    --tw-gradient-from: var(--brand-accent) !important;
+    --tw-gradient-to: var(--brand-accent) !important;
+    --tw-gradient-stops: var(--brand-accent), var(--brand-accent) !important;
+}
+
+/* Tab underline + hover backgrounds */
+.hover\:bg-indigo-50\/50:hover,
+.hover\:bg-red-50:hover,
+.hover\:bg-white:hover {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Make section headers read well on dark surfaces */
+.section-header {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-bottom-color: var(--brand-border) !important;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--brand-text);
+    border: 1px solid var(--brand-border);
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--brand-accent);
+    color: var(--brand-text);
+}
+
+/* Tab UI is defined inline in templates; override for dark two-tone readability */
+.tab-button {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    color: var(--brand-muted) !important;
+    border-bottom-color: transparent !important;
+}
+
+.tab-button:hover {
+    background-color: rgba(255, 255, 255, 0.09) !important;
+    color: var(--brand-text) !important;
+}
+
+.tab-button.active {
+    background-color: rgba(255, 255, 255, 0.10) !important;
+    color: var(--brand-text) !important;
+    border-bottom-color: var(--brand-accent) !important;
+}
+
+.tab-content {
+    border-color: var(--brand-border) !important;
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    color: var(--brand-text) !important;
+}
+
+/* Table Styles */
+.modern-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.modern-table th {
+    background: rgba(248, 250, 252, 0.9);
+    backdrop-filter: blur(4px);
+    color: #475569;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 1rem 1.5rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.modern-table td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    font-size: 0.875rem;
+    transition: background-color 0.2s;
+}
+
+.modern-table tr:hover td {
+    background-color: rgba(241, 245, 249, 0.8);
+}
+
+.modern-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Status Badges */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.badge-success {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.badge-warning {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.badge-error {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+/* Custom Section Headers */
+.section-header {
+    position: relative;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.section-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 60px;
+    height: 3px;
+    background: var(--primary-gradient);
+    border-radius: 3px;
+}

@@ -1,0 +1,8 @@
+import os
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FONT_PATH = os.path.join(BASE_DIR, "static", "fonts", "DejaVuSans.ttf")
+
+pdfmetrics.registerFont(TTFont("DejaVu", FONT_PATH))
