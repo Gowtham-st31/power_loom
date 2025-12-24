@@ -6,9 +6,7 @@ import os # Import os for potential environment variables, though not used in MO
 # ✅ IMPORTANT: Ensure this MONGO_URI matches the one in app.py
 # If you have your MongoDB Atlas URI stored securely as an environment variable, use that.
 # For now, it's hardcoded as per your provided previous code.
-MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://gowthamst31:gowtham123@powerloom-cluster.gfl74dq.mongodb.net/?retryWrites=true&w=majority&appName=powerloom-cluster")
-
-
+MONGO_URI = os.getenv("MONGO_URI")
 if not MONGO_URI:
     raise RuntimeError("MONGO_URI is not set")
 
