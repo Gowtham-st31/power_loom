@@ -7,7 +7,6 @@ import os # Import os for potential environment variables, though not used in MO
 # If you have your MongoDB Atlas URI stored securely as an environment variable, use that.
 # For now, it's hardcoded as per your provided previous code.
 MONGO_URI = os.getenv("MONGO_URI")
-if not MONGO_URI:
     raise RuntimeError("MONGO_URI is not set")
 
 DB_NAME = "powerloom"

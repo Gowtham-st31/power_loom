@@ -1,13 +1,89 @@
 import os
 import json
+import time
 from datetime import datetime, timedelta, timezone # Import UTC for timezone-aware datetimes
+from pathlib import Path
 import pytz
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 from pymongo import MongoClient
+from pymongo import errors as pymongo_errors
+import threading
+import logging
+
+# Load environment variables FIRST before anything else
+try:
+    from dotenv import load_dotenv
+    # Load .env relative to this file so it works regardless of working directory
+    _ENV_PATH = Path(__file__).resolve().parent / ".env"
+    load_dotenv(dotenv_path=_ENV_PATH)
+except Exception:
+    pass
+
+_mongo_client = None
+_mongo_client_lock = threading.Lock()
+
+
+def _safe_mongo_host(uri: str | None) -> str:
+    if not uri:
+        return ""
+    try:
+        # mongodb+srv://user:pass@host/?...
+        return uri.split("@", 1)[-1].split("/", 1)[0]
+    except Exception:
+        return ""
+
+
+def _reset_mongo_client():
+    global _mongo_client
+    with _mongo_client_lock:
+        if _mongo_client is not None:
+            try:
+                _mongo_client.close()
+            except Exception:
+                pass
+        _mongo_client = None
+
+
+def _get_mongo_client() -> MongoClient:
+    global _mongo_client
+    
+    # Check if existing client is still valid
+    if _mongo_client is not None:
+        try:
+            # Test if client is still alive
+            _mongo_client.admin.command("ping")
+            return _mongo_client
+        except Exception:
+            # Client is dead, reset it
+            _mongo_client = None
+
+    with _mongo_client_lock:
+        # Double-check after acquiring lock
+        if _mongo_client is not None:
+            try:
+                _mongo_client.admin.command("ping")
+                return _mongo_client
+            except Exception:
+                _mongo_client = None
+
+        if not MONGO_URI:
+            raise RuntimeError("MONGO_URI is not set")
+
+        host = _safe_mongo_host(MONGO_URI)
+        app.logger.info(f"Initializing MongoDB client for host '{host}'")
+
+        client = MongoClient(
+            MONGO_URI,
+            # Give Atlas a bit more room; first connection can be slow on some networks.
+            serverSelectionTimeoutMS=20000,
+            connectTimeoutMS=20000,
+        )
+        client.admin.command("ping")
+        _mongo_client = client
+        return _mongo_client
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from bson.objectid import ObjectId # Import ObjectId for MongoDB
-import logging
 try:
     from weasyprint import HTML
 except Exception as e:
@@ -16,7 +92,6 @@ except Exception as e:
         "WeasyPrint not available: %s. PDF generation disabled until system libraries (Cairo/Pango/GObject) are installed.",
         e,
     )
-from flask import make_response
 # Import SocketIO
 from flask_socketio import SocketIO, emit
 
@@ -28,9 +103,12 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 
 
 MONGO_URI = os.getenv("MONGO_URI")
-
 if not MONGO_URI:
     raise RuntimeError("MONGO_URI is not set")
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    logging.warning("GEMINI_API_KEY is not set. AI features will be disabled.")
 
 app = Flask(__name__)
 
@@ -61,12 +139,18 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # These are loaded from environment variables. Provide sensible defaults for local development.
 # Render will inject these environment variables when deployed.
 
+# NOTE: If MONGO_URI is not available, using SQLite as fallback for local development
+USE_SQLITE = not bool(MONGO_URI)
+
 DB_NAME = os.getenv("DB_NAME", "powerloom")
 LOOM_DATA_COLLECTION = os.getenv("LOOM_DATA_COLLECTION", "loom_data")
 USERS_COLLECTION = os.getenv("USERS_COLLECTION", "users")
 # New collections for Warp management
 WARP_DATA_COLLECTION = os.getenv("WARP_DATA_COLLECTION", "warp_status")
 WARP_HISTORY_COLLECTION = os.getenv("WARP_HISTORY_COLLECTION", "warp_history")
+
+if USE_SQLITE:
+    logging.warning("MONGO_URI not available - Using SQLite for local development")
 
 
 # Timezone Configuration for Indian Standard Time (IST)
@@ -81,23 +165,8 @@ from pymongo import MongoClient
 
 def get_db_connection():
     """Establish and return MongoDB connection, along with collections."""
-    client = None
     try:
-        if not MONGO_URI:
-            raise RuntimeError("MONGO_URI is not set")
-
-        app.logger.debug(
-            f"Attempting MongoDB connection (first 30 chars): {MONGO_URI[:30]}..."
-        )
-
-        client = MongoClient(
-            MONGO_URI,
-            serverSelectionTimeoutMS=5000,   # 5 sec timeout
-            connectTimeoutMS=5000
-        )
-
-        # ✅ Modern & reliable health check
-        client.admin.command("ping")
+        client = _get_mongo_client()
 
         db = client[DB_NAME]
         loom_collection = db[LOOM_DATA_COLLECTION]
@@ -115,13 +184,19 @@ def get_db_connection():
             warp_history_collection
         )
 
+    except pymongo_errors.PyMongoError as e:
+        app.logger.error(
+            f"MongoDB error in get_db_connection: {e}",
+            exc_info=True,
+        )
+        # Reset shared client on network/DNS blips so the next request can rebuild.
+        _reset_mongo_client()
+        return None, None, None, None, None, None
     except Exception as e:
         app.logger.error(
-            f"MongoDB connection error in get_db_connection: {e}",
-            exc_info=True
+            f"Unexpected error in get_db_connection: {e}",
+            exc_info=True,
         )
-        if client:
-            client.close()
         return None, None, None, None, None, None
 
 
@@ -152,9 +227,9 @@ def handle_db_errors(f):
                 'message': 'An internal database operation failed. Please try again.'
             }), 500
         finally:
-            if client:
-                client.close()
-                app.logger.debug("MongoDB client connection closed.")
+            # MongoClient is thread-safe and designed to be shared.
+            # We intentionally do not close it per request.
+            pass
     return decorated_function
 
 def login_required(f):
@@ -1267,7 +1342,7 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
         session['last_report_summary'] = report_summary
 
 
-        # Limit detailed records sent to AI for the initial prompt to avoid exceeding context window
+        # Send all detailed records for AI (per user request)
         detailed_records_for_ai = []
         for record in records:
             processed_record = convert_datetimes_to_iso(record.copy())
@@ -1282,7 +1357,7 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
         Overall Summary:
         {json.dumps(report_summary, indent=2)}
 
-        Sample Detailed Records (up to {MAX_DETAILED_RECORDS_FOR_AI} records):
+        All Detailed Records ({len(detailed_records_for_ai)} records):
         {json.dumps(detailed_records_for_ai, indent=2)}
 
         Based on this data, please provide:
@@ -1295,8 +1370,10 @@ def analyze_report_with_ai(client, db, loom_collection, users_collection, warp_d
         app.logger.debug(f"Sending prompt to AI:\n{prompt_text[:999999999999999]}...") # Log first 500 chars
 
         # Call Gemini API
-        api_key = "AIzaSyDgPfaR6sjs4L2I34n5NVnyhZvYcFPxohY" 
-        api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+        api_key = GEMINI_API_KEY
+        if not api_key:
+            return jsonify({'status': 'error', 'message': 'AI service is not configured. Please contact administrator.'}), 503
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemma-3-4b-it:generateContent?key={api_key}"
         
         headers = {
             "Content-Type": "application/json",
@@ -1368,16 +1445,16 @@ def ask_ai_question(client, db, loom_collection, users_collection, warp_data_col
     app.logger.info(f"Admin '{session['username']}' asking follow-up question: '{user_question}' based on query: {last_ai_analysis_query}.")
 
     try:
-        # Re-fetch records using the stored query
-        records = list(loom_collection.find({}, {"_id": 0}))
+        # Re-fetch records using the stored query (use the actual query, not empty!)
+        records = list(loom_collection.find(last_ai_analysis_query, {"_id": 0}))
 
         if not records:
             return jsonify({'status': 'info', 'message': 'No data found for the original criteria to answer the question.'}), 200
 
-        # Prepare detailed records for AI, again respecting the limit
+        # Prepare detailed records for AI (limit to avoid token overflow)
         detailed_records_for_ai = []
         for i, record in enumerate(records):
-            if i >= MAX_DETAILED_RECORDS_FOR_AI:
+            if i >= 100:  # Limit to 100 records to avoid rate limits
                 break
             processed_record = convert_datetimes_to_iso(record.copy())
             detailed_records_for_ai.append(processed_record)
@@ -1389,7 +1466,7 @@ def ask_ai_question(client, db, loom_collection, users_collection, warp_data_col
         Overall Summary:
         {json.dumps(last_report_summary, indent=2)}
 
-        Sample Detailed Records (up to {MAX_DETAILED_RECORDS_FOR_AI} records):
+        Sample Detailed Records ({len(detailed_records_for_ai)} out of {len(records)} total):
         {json.dumps(detailed_records_for_ai, indent=2)}
 
         Based on this information and your previous analysis, please answer the following question:
@@ -1399,17 +1476,31 @@ def ask_ai_question(client, db, loom_collection, users_collection, warp_data_col
         app.logger.debug(f"Sending follow-up prompt to AI:\n{follow_up_prompt_text[:500]}...")
 
         # Call Gemini API
-        api_key = "AIzaSyDABptEJ0hUgQMNHep7cAaLKADJXP8AL0w" 
-        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        api_key = GEMINI_API_KEY
+        if not api_key:
+            return jsonify({'status': 'error', 'message': 'AI service is not configured. Please contact administrator.'}), 503
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemma-3-4b-it:generateContent?key={api_key}"
         
         payload = {
             "contents": [{"role": "user", "parts": [{"text": follow_up_prompt_text}]}]
         }
 
         headers = {'Content-Type': 'application/json'}
-        response = requests.post(api_url, headers=headers, json=payload)
-        response.raise_for_status() 
-        
+        # Simple retry on 429 rate limit with backoff
+        response = None
+        for attempt, delay in enumerate((1, 2, 4), start=1):
+            try:
+                response = requests.post(api_url, headers=headers, json=payload, timeout=30)
+                response.raise_for_status()
+                break
+            except requests.exceptions.HTTPError as http_err:
+                status = getattr(response, "status_code", None)
+                if status == 429 and attempt < 3:
+                    app.logger.warning(f"AI rate limited (429) on follow-up question. Retry {attempt}/3 in {delay}s")
+                    time.sleep(delay)
+                    continue
+                raise http_err
+
         ai_result = response.json()
 
         if ai_result.get('candidates') and ai_result['candidates'][0].get('content') and ai_result['candidates'][0]['content'].get('parts'): 
@@ -1426,6 +1517,9 @@ def ask_ai_question(client, db, loom_collection, users_collection, warp_data_col
 
     except requests.exceptions.RequestException as req_e:
         app.logger.error(f"HTTP request to AI API failed for follow-up question from admin '{session['username']}': {str(req_e)}", exc_info=True)
+        # Explicit message for rate limit
+        if isinstance(req_e, requests.exceptions.HTTPError) and getattr(req_e.response, "status_code", None) == 429:
+            return jsonify({'status': 'error', 'message': 'AI rate limit hit. Please wait a moment and try again.'}), 429
         return jsonify({'status': 'error', 'message': f'Failed to get AI answer: Network or API error. Details: {str(req_e)}'}), 500
     except Exception as e:
         app.logger.error(f"Failed to answer follow-up question for admin '{session['username']}': {str(e)}", exc_info=True)
@@ -1444,33 +1538,50 @@ def suggest_loomer_name():
     prompt_text = "Suggest a single, common, and appropriate name for a person who operates a powerloom machine. The name should be short and suitable for a username."
 
     try:
-        api_key = "AIzaSyDABptEJ0hUgQMNHep7cAaLKADJXP8AL0w" 
-        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
-        
+        api_key = GEMINI_API_KEY
+        if not api_key:
+            return jsonify({'status': 'error', 'message': 'AI service is not configured. Please contact administrator.'}), 503
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemma-3-4b-it:generateContent?key={api_key}"
+
         payload = {
             "contents": [{"role": "user", "parts": [{"text": prompt_text}]}],
+            # Keep output plain text and reduce risk of safety blocks
             "generationConfig": {
-                "responseMimeType": "text/plain" # Expect plain text response
-            }
+                "responseMimeType": "text/plain",
+                "temperature": 0.8
+            },
+            "safetySettings": [
+                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"}
+            ]
         }
 
         headers = {'Content-Type': 'application/json'}
-        response = requests.post(api_url, headers=headers, json=payload)
-        response.raise_for_status() 
-        
+        response = requests.post(api_url, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+
         ai_result = response.json()
-        
-        if ai_result.get('candidates') and ai_result['candidates'][0].get('content') and ai_result['candidates'][0]['content'].get('parts'):
-            suggested_name = ai_result['candidates'][0]['content']['parts'][0]['text'].strip()
-            app.logger.info(f"AI successfully suggested loomer name: '{suggested_name}'.")
-            return jsonify({
-                'status': 'success',
-                'suggested_name': suggested_name,
-                'message': 'Loomer name suggested successfully.'
-            }), 200
-        else:
-            app.logger.error(f"AI response structure unexpected or missing content for name suggestion: {ai_result}")
-            return jsonify({'status': 'error', 'message': 'Failed to get AI name suggestion: Unexpected AI response format.'}), 500
+
+        # Parse response defensively
+        candidates = ai_result.get('candidates') or []
+        if candidates:
+            first = candidates[0]
+            content = (first.get('content') or {})
+            parts = content.get('parts') or []
+            if parts and parts[0].get('text'):
+                suggested_name = parts[0]['text'].strip()
+                app.logger.info(f"AI successfully suggested loomer name: '{suggested_name}'.")
+                return jsonify({
+                    'status': 'success',
+                    'suggested_name': suggested_name,
+                    'message': 'Loomer name suggested successfully.'
+                }), 200
+
+        # If we reach here, structure was unexpected
+        app.logger.error(f"AI response structure unexpected or missing content for name suggestion: {ai_result}")
+        return jsonify({'status': 'error', 'message': 'Failed to get AI name suggestion: Unexpected AI response format.'}), 500
 
     except requests.exceptions.RequestException as req_e:
         app.logger.error(f"HTTP request to AI API failed for name suggestion from admin '{session['username']}': {str(req_e)}", exc_info=True)
